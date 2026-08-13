@@ -1,0 +1,19 @@
+# テスト実行時だけ使う設定。src/main/resources/application.ymlより優先して読み込まれる。
+# 本番はMySQL+db/initのSQLで管理するが、テストはH2+Hibernate自動DDLで手軽に検証する。
+server:
+  port: 0
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:event-planner-test;MODE=MySQL;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+
+app:
+  cors:
+    allowed-origins: http://localhost:5174,http://localhost

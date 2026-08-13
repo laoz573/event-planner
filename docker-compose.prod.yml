@@ -1,0 +1,65 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: event-planner-mysql
+    restart: unless-stopped
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-event-planner}
+      MYSQL_USER: ${MYSQL_USER:-appuser}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-apppassword}
+    # 外部公開しない(backendコンテナからのみdocker network経由でアクセス)
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - event-planner-net
+
+  backend:
+    image: ${REGISTRY:-ghcr.io/laoz573}/event-planner-backend:${TAG:-latest}
+    container_name: event-planner-backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-event-planner}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8&connectionCollation=utf8mb4_unicode_ci
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-appuser}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-apppassword}
+      APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-https://event-planner.mkssj-app.jp}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET を.envに設定してください}
+    # 外部公開しない(frontendのnginxが/apiをdocker network経由でこのコンテナに振り分ける)
+    networks:
+      - event-planner-net
+
+  frontend:
+    image: ${REGISTRY:-ghcr.io/laoz573}/event-planner-frontend:${TAG:-latest}
+    container_name: event-planner-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    # 外部にポートを公開しない(独立したshared-proxyコンテナが、このコンテナへ振り分ける)。
+    # 静的ファイル配信・/apiプロキシは、イメージに焼き込み済みの frontend/nginx.conf が担う。
+    networks:
+      - event-planner-net
+      - shared-proxy-net
+
+volumes:
+  mysql_data:
+
+networks:
+  event-planner-net:
+    driver: bridge
+  # elec-tool/household、どちらにも属さない独立したリバースプロキシ(shared-proxy)と
+  # 同じ外部ネットワークに参加する。事前に `docker network create shared-proxy-net` を
+  # 実行しておくこと(elec-tool側ですでに作成済みなら再実行不要)。
+  # TLS終端・証明書管理はshared-proxy側が担う。ドメイン(event-planner.mkssj-app.jp)は
+  # 実際に使うドメインに合わせて書き換えること。
+  shared-proxy-net:
+    external: true
