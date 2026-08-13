@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS event (
     user_id BIGINT NOT NULL,
     year INT NOT NULL,
     name VARCHAR(100) NOT NULL,
+    owner VARCHAR(50) NOT NULL DEFAULT '',
     color VARCHAR(7) NOT NULL DEFAULT '#9c2d96',
     start_date DATE NOT NULL,
     end_date DATE NOT NULL,

@@ -46,6 +46,10 @@ public class Event {
     @Column(nullable = false, length = 100)
     private String name;
 
+    /** 担当(部署名・担当者名など自由入力)。未入力の場合は空文字。 */
+    @Column(nullable = false, length = 50)
+    private String owner;
+
     /** カレンダー上の矢印の色(#rrggbb)。デフォルトは紫。 */
     @Column(nullable = false, length = 7)
     private String color;

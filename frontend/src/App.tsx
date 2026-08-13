@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import EventPlanner from './EventPlanner'
+import PlannerShell from './PlannerShell'
 import Login from './Login'
 import Register from './Register'
 import { AUTH_EXPIRED_EVENT, clearAuth, getUsername, isLoggedIn } from './auth'
@@ -7,9 +7,8 @@ import './App.css'
 
 type View = 'login' | 'register' | 'planner'
 
-// elec-toolはジャンル(強電/弱電)ごとに複数ツールを切り替える構成だが、
-// このアプリは年間イベント計画ツール専用なので、ジャンル選択画面は設けず単一画面にしている。
 // ログイン状態に応じて login / register / planner の3画面を切り替えるシンプルな状態遷移にしている。
+// plannerに入った後の「年間計画・四半期・担当別・設定」タブの切り替えはPlannerShellが受け持つ。
 function App() {
   const [view, setView] = useState<View>(isLoggedIn() ? 'planner' : 'login')
   const [username, setUsername] = useState<string | null>(getUsername())
@@ -43,24 +42,7 @@ function App() {
     return <Register onRegistered={handleLoggedIn} onGoToLogin={() => setView('login')} />
   }
 
-  return (
-    <div>
-      <header className="app-header">
-        <h1>年間イベント計画ツール</h1>
-        <div className="app-header-user">
-          {username && <span className="app-header-username">{username} さん</span>}
-          <button type="button" className="app-header-logout" onClick={handleLogout}>
-            ログアウト
-          </button>
-        </div>
-      </header>
-      <div className="app-body">
-        <main className="main-content">
-          <EventPlanner />
-        </main>
-      </div>
-    </div>
-  )
+  return <PlannerShell username={username} onLogout={handleLogout} />
 }
 
 export default App

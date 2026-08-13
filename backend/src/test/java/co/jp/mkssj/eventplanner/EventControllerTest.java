@@ -59,6 +59,7 @@ class EventControllerTest {
         EventUpsertRequest createRequest = EventUpsertRequest.builder()
                 .year(2026)
                 .name("新商品プロジェクト")
+                .owner("開発")
                 .color("#9c2d96")
                 .startDate(LocalDate.of(2026, 4, 1))
                 .endDate(LocalDate.of(2026, 9, 30))
@@ -72,6 +73,7 @@ class EventControllerTest {
         EventDto created = createResponse.getBody();
         assertThat(created).isNotNull();
         assertThat(created.getId()).isNotNull();
+        assertThat(created.getOwner()).isEqualTo("開発");
         assertThat(created.getCheckpoints()).containsExactly(
                 LocalDate.of(2026, 5, 15), LocalDate.of(2026, 7, 1));
 

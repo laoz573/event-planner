@@ -4,6 +4,7 @@ export interface EventItem {
   id: number
   year: number
   name: string
+  owner: string
   color: string
   startDate: string
   endDate: string
@@ -14,9 +15,12 @@ export interface EventItem {
 export interface EventUpsertPayload {
   year: number
   name: string
+  owner: string
   color: string
   startDate: string
   endDate: string
   goalDate: string | null
   checkpoints: string[]
 }
+
+export type EventStatus = '予定' | '進行中' | '完了'

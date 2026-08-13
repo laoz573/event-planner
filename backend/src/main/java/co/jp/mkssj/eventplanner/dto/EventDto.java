@@ -18,6 +18,7 @@ public class EventDto {
     private Long id;
     private Integer year;
     private String name;
+    private String owner;
     private String color;
     private LocalDate startDate;
     private LocalDate endDate;

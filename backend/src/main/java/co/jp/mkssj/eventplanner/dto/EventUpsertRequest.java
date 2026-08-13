@@ -33,6 +33,11 @@ public class EventUpsertRequest {
     @Size(max = 100)
     private String name;
 
+    /** 担当(自由入力)。未入力の場合は空文字として保存する。 */
+    @Builder.Default
+    @Size(max = 50, message = "担当は50文字以内で入力してください")
+    private String owner = "";
+
     @NotBlank
     @Pattern(regexp = "^#[0-9A-Fa-f]{6}$", message = "色は#rrggbb形式で指定してください")
     private String color;

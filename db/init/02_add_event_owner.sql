@@ -1,0 +1,13 @@
+-- 「担当」列(自由入力の部署名・担当者名)の追加。
+--
+-- db/init/ 配下のSQLは、MySQLコンテナのデータディレクトリが「まっさら」の状態で
+-- 初回起動したときにしか自動実行されない(docker-entrypoint-initdb.dの仕様)。
+-- 既にevent-planner用のMySQLコンテナ/ボリュームを作成済みの場合はこのファイルは自動実行されないため、
+-- 以下のいずれかの方法で反映すること。
+--
+--   (a) 開発中でデータを消してよい場合: `docker compose down -v` でボリュームごと作り直してから起動し直す
+--   (b) 既存データを残したい場合: このファイルの中身を直接、稼働中のMySQLに対して実行する
+--       例: docker compose exec -T mysql mysql -u appuser -p event-planner < db/init/02_add_event_owner.sql
+--
+-- MySQL 8.0.29以降は ADD COLUMN IF NOT EXISTS に対応しているため、複数回実行してもエラーにならない。
+ALTER TABLE event ADD COLUMN IF NOT EXISTS owner VARCHAR(50) NOT NULL DEFAULT '' AFTER name;

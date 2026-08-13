@@ -114,6 +114,8 @@ public class EventController {
     private void applyRequest(Event event, EventUpsertRequest request) {
         event.setYear(request.getYear());
         event.setName(request.getName());
+        // JSONデシリアライズ時は @Builder.Default が効かずnullになり得るため、ここでも空文字にフォールバックする
+        event.setOwner(request.getOwner() != null ? request.getOwner() : "");
         event.setColor(request.getColor());
         event.setStartDate(request.getStartDate());
         event.setEndDate(request.getEndDate());
@@ -129,6 +131,7 @@ public class EventController {
                 .id(event.getId())
                 .year(event.getYear())
                 .name(event.getName())
+                .owner(event.getOwner())
                 .color(event.getColor())
                 .startDate(event.getStartDate())
                 .endDate(event.getEndDate())
