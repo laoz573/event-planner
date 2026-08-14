@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { EventItem, EventUpsertPayload } from './types'
 import { createEvent, deleteEvent, fetchEvents, updateEvent } from './api'
-import { clamp, dateToIdx, idxToDate, totalDaysInYear } from './dateUtils'
+import { clamp, dateToIdx, idxToDate, todayDateStr, totalDaysInYear } from './dateUtils'
 
 const DEFAULT_COLOR = '#2b2b2b'
 const DEFAULT_CHECKPOINT_COLOR = '#1c1a17'
@@ -81,8 +81,17 @@ export function useEventPlanner(year: number) {
   }, [])
 
   const handleAddEvent = () => {
-    const startIdx = 0
-    const endIdx = Math.min(29, total - 1)
+    // 「新しいイベント」の初期期間は、常に1/1〜1/30に固定していると、表示中の年と実際の今日が
+    // 離れているときに毎回1月まで期間をずらす手間が発生してしまう。今日の月日を表示中の年に
+    // 当てはめた日を開始日にすることで、まず今日の近くに置かれるようにする。
+    const [, todayMonth, todayDay] = todayDateStr().split('-').map(Number)
+    const monthStr = String(todayMonth).padStart(2, '0')
+    const dayStr = String(todayDay).padStart(2, '0')
+    // 2/29(うるう日)を平年に当てはめた場合など、存在しない日付はDate.UTCが自動的に
+    // 翌日以降へ繰り上げてくれるので、ここで特別扱いする必要はない。
+    const todayIdxInYear = clamp(dateToIdx(`${year}-${monthStr}-${dayStr}`, year), 0, total - 1)
+    const startIdx = todayIdxInYear
+    const endIdx = Math.min(startIdx + 29, total - 1)
     const payload: EventUpsertPayload = {
       year,
       name: '新しいイベント',

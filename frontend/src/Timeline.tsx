@@ -285,6 +285,7 @@ function Timeline({
                       className="ep-name-chart"
                       value={ev.name}
                       onChange={(e) => onNameChange(ev.id, e.target.value)}
+                      onFocus={(e) => e.target.select()}
                       onBlur={() => onNameCommit(ev.id)}
                     />
                     <input
