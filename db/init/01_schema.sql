@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS event (
     start_date DATE NOT NULL,
     end_date DATE NOT NULL,
     goal_date DATE,
+    goal_color VARCHAR(7) NOT NULL DEFAULT '#b3241c',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_event_user FOREIGN KEY (user_id) REFERENCES app_user(id) ON DELETE CASCADE,
@@ -30,6 +31,8 @@ CREATE TABLE IF NOT EXISTS event_checkpoint (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     event_id BIGINT NOT NULL,
     checkpoint_date DATE NOT NULL,
+    label VARCHAR(200) NOT NULL DEFAULT '',
+    color VARCHAR(7) NOT NULL DEFAULT '#1c1a17',
     CONSTRAINT fk_event_checkpoint_event FOREIGN KEY (event_id) REFERENCES event(id) ON DELETE CASCADE,
     INDEX idx_event_checkpoint_event (event_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

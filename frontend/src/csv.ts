@@ -1,5 +1,9 @@
 import type { EventItem } from './types'
-import { computeStatus, countDays, formatPeriod, todayDateStr } from './dateUtils'
+import { computeStatus, countDays, fmtShort, formatPeriod, todayDateStr } from './dateUtils'
+
+function formatCheckpointForCsv(cp: { date: string; label: string }): string {
+  return cp.label ? `${fmtShort(cp.date)} ${cp.label}` : fmtShort(cp.date)
+}
 
 function escapeCsvField(value: string): string {
   if (/[",\n]/.test(value)) {
@@ -16,7 +20,7 @@ export function eventsToCsv(events: EventItem[]): string {
     ev.owner,
     formatPeriod(ev.startDate, ev.endDate),
     String(countDays(ev.startDate, ev.endDate)),
-    ev.checkpoints.join(' / '),
+    ev.checkpoints.map(formatCheckpointForCsv).join(' / '),
     ev.goalDate ?? '',
     computeStatus(ev, today)
   ])

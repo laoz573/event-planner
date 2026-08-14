@@ -1,6 +1,7 @@
 package co.jp.mkssj.eventplanner;
 
 import co.jp.mkssj.eventplanner.dto.AuthResponseDto;
+import co.jp.mkssj.eventplanner.dto.CheckpointItem;
 import co.jp.mkssj.eventplanner.dto.EventDto;
 import co.jp.mkssj.eventplanner.dto.EventUpsertRequest;
 import co.jp.mkssj.eventplanner.dto.RegisterRequest;
@@ -64,7 +65,10 @@ class EventControllerTest {
                 .startDate(LocalDate.of(2026, 4, 1))
                 .endDate(LocalDate.of(2026, 9, 30))
                 .goalDate(LocalDate.of(2026, 9, 30))
-                .checkpoints(List.of(LocalDate.of(2026, 5, 15), LocalDate.of(2026, 7, 1)))
+                .goalColor("#1565c0")
+                .checkpoints(List.of(
+                        CheckpointItem.builder().date(LocalDate.of(2026, 5, 15)).label("50%の問題集完了").color("#2e7d32").build(),
+                        CheckpointItem.builder().date(LocalDate.of(2026, 7, 1)).build()))
                 .build();
 
         ResponseEntity<EventDto> createResponse = restTemplate.exchange(
@@ -74,8 +78,14 @@ class EventControllerTest {
         assertThat(created).isNotNull();
         assertThat(created.getId()).isNotNull();
         assertThat(created.getOwner()).isEqualTo("開発");
-        assertThat(created.getCheckpoints()).containsExactly(
+        assertThat(created.getCheckpoints()).extracting(CheckpointItem::getDate).containsExactly(
                 LocalDate.of(2026, 5, 15), LocalDate.of(2026, 7, 1));
+        assertThat(created.getCheckpoints()).extracting(CheckpointItem::getLabel).containsExactly(
+                "50%の問題集完了", "");
+        // 1件目は色を指定、2件目は未指定(デフォルト色にフォールバックする)ことを確認
+        assertThat(created.getCheckpoints()).extracting(CheckpointItem::getColor).containsExactly(
+                "#2e7d32", "#1c1a17");
+        assertThat(created.getGoalColor()).isEqualTo("#1565c0");
 
         ResponseEntity<EventDto[]> listResponse = restTemplate.exchange(
                 "/api/events?year=2026", HttpMethod.GET, new HttpEntity<>(authHeaders()), EventDto[].class);
@@ -95,7 +105,7 @@ class EventControllerTest {
                 .startDate(LocalDate.of(2026, 4, 25))
                 .endDate(LocalDate.of(2026, 10, 24))
                 .goalDate(LocalDate.of(2026, 10, 24))
-                .checkpoints(List.of(LocalDate.of(2026, 7, 1)))
+                .checkpoints(List.of(CheckpointItem.builder().date(LocalDate.of(2026, 7, 1)).label("最終レビュー").build()))
                 .build();
         restTemplate.exchange("/api/events/" + created.getId(), HttpMethod.PUT,
                 new HttpEntity<>(updateRequest, authHeaders()), Void.class);
@@ -105,7 +115,10 @@ class EventControllerTest {
         assertThat(afterUpdate.getBody()).hasSize(1);
         EventDto updated = afterUpdate.getBody()[0];
         assertThat(updated.getStartDate()).isEqualTo(LocalDate.of(2026, 4, 25));
-        assertThat(updated.getCheckpoints()).containsExactly(LocalDate.of(2026, 7, 1));
+        assertThat(updated.getCheckpoints()).extracting(CheckpointItem::getDate).containsExactly(LocalDate.of(2026, 7, 1));
+        // 更新リクエストでgoalColorを指定しなかった場合はデフォルト色にフォールバックすることを確認
+        assertThat(updated.getGoalColor()).isEqualTo("#b3241c");
+        assertThat(updated.getCheckpoints()).extracting(CheckpointItem::getLabel).containsExactly("最終レビュー");
 
         // 開始日が終了日より後だと400
         EventUpsertRequest invalidRequest = EventUpsertRequest.builder()

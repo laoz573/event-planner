@@ -1,5 +1,6 @@
 package co.jp.mkssj.eventplanner.dto;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -51,6 +52,10 @@ public class EventUpsertRequest {
     /** ゴールを設定しない場合は null */
     private LocalDate goalDate;
 
+    /** ゴール(■)の色(#rrggbb)。未指定(null)の場合はサーバー側でデフォルト色にフォールバックする。 */
+    @Pattern(regexp = "^#[0-9A-Fa-f]{6}$", message = "色は#rrggbb形式で指定してください")
+    private String goalColor;
+
     @Builder.Default
-    private List<@NotNull LocalDate> checkpoints = new ArrayList<>();
+    private List<@NotNull @Valid CheckpointItem> checkpoints = new ArrayList<>();
 }

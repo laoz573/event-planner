@@ -51,9 +51,6 @@ function QuarterView({ year, setYear, events, setEvents, ...planner }: QuarterVi
             </button>
           ))}
         </div>
-        <button className="ep-btn-primary" onClick={planner.handleAddEvent}>
-          ＋ イベント追加
-        </button>
       </div>
 
       {planner.error && <p className="error-text">{planner.error}</p>}
@@ -79,6 +76,7 @@ function QuarterView({ year, setYear, events, setEvents, ...planner }: QuarterVi
         year={year}
         events={quarterEvents}
         loading={planner.loading}
+        onAddEvent={planner.handleAddEvent}
         onNameChange={planner.handleNameChange}
         onNameCommit={planner.handleNameCommit}
         onOwnerChange={planner.handleOwnerChange}
@@ -89,9 +87,13 @@ function QuarterView({ year, setYear, events, setEvents, ...planner }: QuarterVi
         onGoalSet={planner.handleGoalSet}
         onGoalClear={planner.handleGoalClear}
         onGoalDateChange={planner.handleGoalDateChange}
+        onGoalColorChange={planner.handleGoalColorChange}
         onAddCheckpoint={planner.handleAddCheckpoint}
         onRemoveCheckpoint={planner.handleRemoveCheckpoint}
         onCheckpointDateChange={planner.handleCheckpointDateChange}
+        onCheckpointLabelChange={planner.handleCheckpointLabelChange}
+        onCheckpointLabelCommit={planner.handleCheckpointLabelCommit}
+        onCheckpointColorChange={planner.handleCheckpointColorChange}
         onRemoveEvent={planner.handleRemoveEvent}
       />
     </>

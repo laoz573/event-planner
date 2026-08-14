@@ -7,6 +7,7 @@
 	docker-build up down \
 	docker-build-backend docker-build-frontend docker-build-prod login push-backend push-frontend push \
 	pull-prod up-prod down-prod \
+	pull-home up-home down-home \
 	local-backend-dev
 
 # --- 開発用コンテナ自体の準備 ---
@@ -117,6 +118,21 @@ up-prod: pull-prod
 
 down-prod:
 	docker compose -f docker-compose.prod.yml down
+
+# --- 自宅などで、ビルドせずGHCRのイメージをpullして動かす ---
+# 使い方の例(事前にどこかDockerが使える環境で `make push` 済みであること):
+#   make pull-home
+#   make up-home
+#   REGISTRY=ghcr.io/別のユーザー名 TAG=v1.0.0 make up-home
+
+pull-home:
+	docker compose -f docker-compose.home.yml pull
+
+up-home: pull-home
+	docker compose -f docker-compose.home.yml up -d
+
+down-home:
+	docker compose -f docker-compose.home.yml down
 
 # --- ローカル開発(Docker未使用、Java/Node直接インストール派向け) ---
 # 開発用コンテナを使わず、ホストに直接 Java17+Maven+Node.js が入っている前提の軽量な代替手段。

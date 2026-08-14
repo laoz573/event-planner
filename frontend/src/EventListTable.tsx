@@ -1,6 +1,6 @@
 import { Fragment, useState } from 'react'
 import type { EventItem } from './types'
-import { computeStatus, countDays, formatPeriod, todayDateStr } from './dateUtils'
+import { computeStatus, countDays, fmtShort, formatPeriod, todayDateStr } from './dateUtils'
 
 interface EventListTableProps {
   title: string
@@ -8,6 +8,7 @@ interface EventListTableProps {
   year: number
   events: EventItem[]
   loading?: boolean
+  onAddEvent: () => void
   onNameChange: (id: number, name: string) => void
   onNameCommit: (id: number) => void
   onOwnerChange: (id: number, owner: string) => void
@@ -18,9 +19,13 @@ interface EventListTableProps {
   onGoalSet: (id: number) => void
   onGoalClear: (id: number) => void
   onGoalDateChange: (id: number, goalDate: string) => void
+  onGoalColorChange: (id: number, color: string) => void
   onAddCheckpoint: (id: number) => void
   onRemoveCheckpoint: (id: number, idx: number) => void
   onCheckpointDateChange: (id: number, idx: number, value: string) => void
+  onCheckpointLabelChange: (id: number, idx: number, value: string) => void
+  onCheckpointLabelCommit: (id: number) => void
+  onCheckpointColorChange: (id: number, idx: number, color: string) => void
   onRemoveEvent: (id: number) => void
 }
 
@@ -36,6 +41,7 @@ function EventListTable({
   year,
   events,
   loading,
+  onAddEvent,
   onNameChange,
   onNameCommit,
   onOwnerChange,
@@ -46,9 +52,13 @@ function EventListTable({
   onGoalSet,
   onGoalClear,
   onGoalDateChange,
+  onGoalColorChange,
   onAddCheckpoint,
   onRemoveCheckpoint,
   onCheckpointDateChange,
+  onCheckpointLabelChange,
+  onCheckpointLabelCommit,
+  onCheckpointColorChange,
   onRemoveEvent
 }: EventListTableProps) {
   const [expandedId, setExpandedId] = useState<number | null>(null)
@@ -58,7 +68,12 @@ function EventListTable({
     <div className="ep-table-card">
       <div className="ep-chart-card-head">
         <h3>{title}</h3>
-        {hint && <span className="ep-muted-hint">{hint}</span>}
+        <div className="ep-chart-card-head-actions">
+          {hint && <span className="ep-muted-hint">{hint}</span>}
+          <button className="ep-btn-primary" onClick={onAddEvent}>
+            ＋ イベント追加
+          </button>
+        </div>
       </div>
       <div className="ep-table-scroll">
         <table className="ep-table">
@@ -98,13 +113,25 @@ function EventListTable({
                     <td className="ep-col-cp-display">
                       {ev.checkpoints.length === 0 && <span className="ep-cell-dash">—</span>}
                       {ev.checkpoints.map((cp, idx) => (
-                        <span key={idx} className="ep-chip ep-chip-checkpoint">
-                          {cp}
+                        <span key={idx} className="ep-chip ep-chip-checkpoint" title={fmtShort(cp.date)}>
+                          <span className="ep-chip-dot" style={{ background: cp.color }} />
+                          {cp.label ? cp.label : fmtShort(cp.date)}
+                          {cp.label && <span className="ep-chip-date">{fmtShort(cp.date)}</span>}
                         </span>
                       ))}
                     </td>
                     <td className="ep-col-goal-display">
-                      {ev.goalDate ? <span className="ep-chip ep-chip-goal">{ev.goalDate}</span> : <span className="ep-cell-dash">—</span>}
+                      {ev.goalDate ? (
+                        <span
+                          className="ep-chip ep-chip-goal"
+                          style={{ color: ev.goalColor, borderColor: ev.goalColor }}
+                        >
+                          <span className="ep-chip-dot" style={{ background: ev.goalColor }} />
+                          {ev.goalDate}
+                        </span>
+                      ) : (
+                        <span className="ep-cell-dash">—</span>
+                      )}
                     </td>
                     <td className="ep-col-status-display">
                       <span className={`ep-status-badge ${statusClass(status)}`}>{status}</span>
@@ -175,15 +202,32 @@ function EventListTable({
                             {ev.checkpoints.map((cp, idx) => (
                               <div key={idx} className="ep-cp-row">
                                 <input
-                                  type="date"
-                                  value={cp}
-                                  min={`${year}-01-01`}
-                                  max={`${year}-12-31`}
-                                  onChange={(e) => onCheckpointDateChange(ev.id, idx, e.target.value)}
+                                  type="text"
+                                  className="ep-cp-label-input"
+                                  placeholder="例: 50%の問題集完了"
+                                  value={cp.label}
+                                  onChange={(e) => onCheckpointLabelChange(ev.id, idx, e.target.value)}
+                                  onBlur={() => onCheckpointLabelCommit(ev.id)}
                                 />
-                                <button className="ep-cp-remove" onClick={() => onRemoveCheckpoint(ev.id, idx)}>
-                                  ×
-                                </button>
+                                <div className="ep-cp-row-bottom">
+                                  <input
+                                    type="color"
+                                    className="ep-cp-color-input"
+                                    title="チェックポイントの色"
+                                    value={cp.color}
+                                    onChange={(e) => onCheckpointColorChange(ev.id, idx, e.target.value)}
+                                  />
+                                  <input
+                                    type="date"
+                                    value={cp.date}
+                                    min={`${year}-01-01`}
+                                    max={`${year}-12-31`}
+                                    onChange={(e) => onCheckpointDateChange(ev.id, idx, e.target.value)}
+                                  />
+                                  <button className="ep-cp-remove" onClick={() => onRemoveCheckpoint(ev.id, idx)}>
+                                    ×
+                                  </button>
+                                </div>
                               </div>
                             ))}
                             <button className="ep-cp-add" onClick={() => onAddCheckpoint(ev.id)}>
@@ -194,6 +238,13 @@ function EventListTable({
                             <label>ゴール</label>
                             {ev.goalDate ? (
                               <div className="ep-edit-field-row">
+                                <input
+                                  type="color"
+                                  className="ep-cp-color-input"
+                                  title="ゴールの色"
+                                  value={ev.goalColor}
+                                  onChange={(e) => onGoalColorChange(ev.id, e.target.value)}
+                                />
                                 <input
                                   type="date"
                                   value={ev.goalDate}
