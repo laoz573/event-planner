@@ -40,7 +40,6 @@ function AnnualView({ year, setYear, events, setEvents, ...planner }: AnnualView
         setSearch={setSearch}
         statusFilter={statusFilter}
         setStatusFilter={setStatusFilter}
-        onAddEvent={planner.handleAddEvent}
         loading={planner.loading}
         savingCount={planner.savingIds.size}
       />
@@ -67,6 +66,7 @@ function AnnualView({ year, setYear, events, setEvents, ...planner }: AnnualView
         year={year}
         events={filteredEvents}
         loading={planner.loading}
+        onAddEvent={planner.handleAddEvent}
         onNameChange={planner.handleNameChange}
         onNameCommit={planner.handleNameCommit}
         onOwnerChange={planner.handleOwnerChange}
@@ -77,9 +77,13 @@ function AnnualView({ year, setYear, events, setEvents, ...planner }: AnnualView
         onGoalSet={planner.handleGoalSet}
         onGoalClear={planner.handleGoalClear}
         onGoalDateChange={planner.handleGoalDateChange}
+        onGoalColorChange={planner.handleGoalColorChange}
         onAddCheckpoint={planner.handleAddCheckpoint}
         onRemoveCheckpoint={planner.handleRemoveCheckpoint}
         onCheckpointDateChange={planner.handleCheckpointDateChange}
+        onCheckpointLabelChange={planner.handleCheckpointLabelChange}
+        onCheckpointLabelCommit={planner.handleCheckpointLabelCommit}
+        onCheckpointColorChange={planner.handleCheckpointColorChange}
         onRemoveEvent={planner.handleRemoveEvent}
       />
 

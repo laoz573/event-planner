@@ -11,7 +11,6 @@ interface StatBarProps {
   setSearch: (v: string) => void
   statusFilter: StatusFilter
   setStatusFilter: (v: StatusFilter) => void
-  onAddEvent: () => void
   loading?: boolean
   savingCount?: number
 }
@@ -24,7 +23,6 @@ function StatBar({
   setSearch,
   statusFilter,
   setStatusFilter,
-  onAddEvent,
   loading,
   savingCount
 }: StatBarProps) {
@@ -85,10 +83,6 @@ function StatBar({
           </button>
         ))}
       </div>
-
-      <button className="ep-btn-primary" onClick={onAddEvent}>
-        ＋ イベント追加
-      </button>
 
       {(loading || (savingCount ?? 0) > 0) && (
         <span className="ep-statbar-status">{loading ? '読み込み中...' : '保存中...'}</span>

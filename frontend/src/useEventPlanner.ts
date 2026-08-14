@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { EventItem, EventUpsertPayload } from './types'
 import { createEvent, deleteEvent, fetchEvents, updateEvent } from './api'
 import { clamp, dateToIdx, idxToDate, totalDaysInYear } from './dateUtils'
 
 const DEFAULT_COLOR = '#2b2b2b'
+const DEFAULT_CHECKPOINT_COLOR = '#1c1a17'
+const DEFAULT_GOAL_COLOR = '#b3241c'
 
 function toPayload(ev: EventItem): EventUpsertPayload {
   return {
@@ -14,6 +16,7 @@ function toPayload(ev: EventItem): EventUpsertPayload {
     startDate: ev.startDate,
     endDate: ev.endDate,
     goalDate: ev.goalDate,
+    goalColor: ev.goalColor,
     checkpoints: ev.checkpoints
   }
 }
@@ -33,6 +36,11 @@ export function useEventPlanner(year: number) {
   const [error, setError] = useState<string | null>(null)
   const [savingIds, setSavingIds] = useState<Set<number>>(new Set())
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null)
+  // 同じイベントIDへの保存リクエストが重ならないようにするためのキュー(id -> 直前の保存を表すPromise)。
+  // バーのドラッグ直後にチェックポイントも操作する、といった連続操作で2件のPUTが同時に飛ぶと、
+  // サーバー側(MySQL)でチェックポイント行の削除・再作成がデッドロックすることがあるため、
+  // フロント側でも「同じイベントへの保存は必ず1件ずつ順番に」実行されるようにする。
+  const pendingSaveRef = useRef<Map<number, Promise<void>>>(new Map())
 
   const total = totalDaysInYear(year)
 
@@ -55,14 +63,21 @@ export function useEventPlanner(year: number) {
   }
 
   const persist = useCallback((ev: EventItem) => {
-    markSaving(ev.id, true)
-    updateEvent(ev.id, toPayload(ev))
-      .then((saved) => {
-        setEvents((prev) => prev.map((e) => (e.id === saved.id ? saved : e)))
-        setLastSavedAt(new Date())
-      })
-      .catch((err) => setError(errorMessage(err)))
-      .finally(() => markSaving(ev.id, false))
+    const runSave = (): Promise<void> => {
+      markSaving(ev.id, true)
+      return updateEvent(ev.id, toPayload(ev))
+        .then((saved) => {
+          setEvents((prev) => prev.map((e) => (e.id === saved.id ? saved : e)))
+          setLastSavedAt(new Date())
+        })
+        .catch((err) => setError(errorMessage(err)))
+        .finally(() => markSaving(ev.id, false))
+    }
+    // 同じイベントIDへの直前の保存(あれば)が完了してから実行する。これにより、
+    // 短時間に連続して操作しても同じイベントに対するPUTが同時に2件飛ぶことがなくなる。
+    const previous = pendingSaveRef.current.get(ev.id) ?? Promise.resolve()
+    const chained = previous.then(runSave, runSave)
+    pendingSaveRef.current.set(ev.id, chained)
   }, [])
 
   const handleAddEvent = () => {
@@ -76,6 +91,7 @@ export function useEventPlanner(year: number) {
       startDate: idxToDate(startIdx, year),
       endDate: idxToDate(endIdx, year),
       goalDate: null,
+      goalColor: DEFAULT_GOAL_COLOR,
       checkpoints: []
     }
     setError(null)
@@ -146,13 +162,16 @@ export function useEventPlanner(year: number) {
   }
   const handleGoalClear = (id: number) => updateLocalAndPersist(id, { goalDate: null })
   const handleGoalDateChange = (id: number, goalDate: string) => updateLocalAndPersist(id, { goalDate })
+  const handleGoalColorChange = (id: number, goalColor: string) => updateLocalAndPersist(id, { goalColor })
   const handleAddCheckpoint = (id: number) => {
     const ev = events.find((e) => e.id === id)
     if (!ev) return
     const s = dateToIdx(ev.startDate, year)
     const e2 = dateToIdx(ev.endDate, year)
     const mid = clamp(s + Math.floor((e2 - s) / 2), 0, total - 1)
-    updateLocalAndPersist(id, { checkpoints: [...ev.checkpoints, idxToDate(mid, year)] })
+    updateLocalAndPersist(id, {
+      checkpoints: [...ev.checkpoints, { date: idxToDate(mid, year), label: '', color: DEFAULT_CHECKPOINT_COLOR }]
+    })
   }
   const handleRemoveCheckpoint = (id: number, idx: number) => {
     const ev = events.find((e) => e.id === id)
@@ -162,7 +181,32 @@ export function useEventPlanner(year: number) {
   const handleCheckpointDateChange = (id: number, idx: number, value: string) => {
     const ev = events.find((e) => e.id === id)
     if (!ev) return
-    updateLocalAndPersist(id, { checkpoints: ev.checkpoints.map((c, i) => (i === idx ? value : c)) })
+    updateLocalAndPersist(id, {
+      checkpoints: ev.checkpoints.map((c, i) => (i === idx ? { ...c, date: value } : c))
+    })
+  }
+  const handleCheckpointLabelChange = (id: number, idx: number, label: string) => {
+    setEvents((prev) =>
+      prev.map((e) =>
+        e.id === id
+          ? { ...e, checkpoints: e.checkpoints.map((c, i) => (i === idx ? { ...c, label } : c)) }
+          : e
+      )
+    )
+  }
+  const handleCheckpointLabelCommit = (id: number) => {
+    setEvents((prev) => {
+      const ev = prev.find((e) => e.id === id)
+      if (ev) persist(ev)
+      return prev
+    })
+  }
+  const handleCheckpointColorChange = (id: number, idx: number, color: string) => {
+    const ev = events.find((e) => e.id === id)
+    if (!ev) return
+    updateLocalAndPersist(id, {
+      checkpoints: ev.checkpoints.map((c, i) => (i === idx ? { ...c, color } : c))
+    })
   }
 
   return {
@@ -186,9 +230,13 @@ export function useEventPlanner(year: number) {
     handleGoalSet,
     handleGoalClear,
     handleGoalDateChange,
+    handleGoalColorChange,
     handleAddCheckpoint,
     handleRemoveCheckpoint,
-    handleCheckpointDateChange
+    handleCheckpointDateChange,
+    handleCheckpointLabelChange,
+    handleCheckpointLabelCommit,
+    handleCheckpointColorChange
   }
 }
 

@@ -118,6 +118,44 @@ docker compose up --build
 
 `db/init/` 配下のSQLはMySQLコンテナの初回起動時に自動実行されます。
 
+## 使い方1b: ビルドせずGHCRのイメージをpullして使う(自宅など向け)
+
+「その場でビルドするより、イメージをpullしてくる方が楽」という場合はこちらです。使うファイルは
+`docker-compose.home.yml`で、`docker-compose.prod.yml`(社内サーバー向け、共有プロキシ前提)とは別物です。
+自宅のようにポートを直接公開してよい単体マシン向けに、`docker-compose.yml`と同じポート構成
+(8081/8001/3307)のまま、`build:`の代わりに`image:`でGHCRのイメージを指定しています。
+
+**注意:** GHCRにイメージがまだ存在しない場合、`pull`はできません。**最初に一度だけ**、Dockerが使える
+環境(このリポジトリ一式がある場所ならどこでもよい)で以下を実行してイメージをビルド・pushしておく必要が
+あります。
+
+```bash
+# 1. 事前準備: どこかDockerが使える環境で一度だけ実行(GH_TOKENはGHCRへのwrite:packages権限を持つトークン)
+GH_TOKEN=xxxxx make push
+```
+
+pushが終わったら、自宅などpullしたい側では以下だけで起動できます。
+
+```bash
+cd event-planner
+cp .env.example .env
+# .env を編集してパスワードとJWT_SECRETを設定
+
+# GHCRのパッケージが非公開(private)設定の場合は、pull前にログインが必要
+# (公開パッケージに変更している場合は不要)
+echo $GH_TOKEN | docker login ghcr.io -u laoz573 --password-stdin
+
+make up-home
+```
+
+- フロントエンド: http://localhost:8081
+- バックエンドAPI: http://localhost:8001
+- MySQL: localhost:3307
+
+`REGISTRY`/`TAG`を省略すると`ghcr.io/laoz573/event-planner-backend:latest`等が使われます。別のイメージ名や
+タグを使いたい場合は`REGISTRY=ghcr.io/別のユーザー名 TAG=v1.0.0 make up-home`のように指定してください。
+停止は`make down-home`です。
+
 ## 使い方2: 開発用コンテナ(docker/dev)を使う
 
 elec-toolと同じ「作業机コンテナ」方式です。Java 17 / Maven / MySQL / Node.js / Docker CLIが全て入った

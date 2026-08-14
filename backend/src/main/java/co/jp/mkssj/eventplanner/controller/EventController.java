@@ -1,13 +1,14 @@
 package co.jp.mkssj.eventplanner.controller;
 
+import co.jp.mkssj.eventplanner.dto.CheckpointItem;
 import co.jp.mkssj.eventplanner.dto.EventDto;
 import co.jp.mkssj.eventplanner.dto.EventUpsertRequest;
 import co.jp.mkssj.eventplanner.entity.Event;
-import co.jp.mkssj.eventplanner.entity.EventCheckpoint;
 import co.jp.mkssj.eventplanner.repository.EventRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.TransientDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -60,7 +61,7 @@ public class EventController {
         Event event = new Event();
         event.setUserId(userId);
         applyRequest(event, request);
-        return toDto(eventRepository.save(event));
+        return toDto(saveWithRetry(event));
     }
 
     @PutMapping("/{id}")
@@ -70,7 +71,7 @@ public class EventController {
         validateDateRange(request.getStartDate(), request.getEndDate());
         Event event = findOwnedEvent(id, userId);
         applyRequest(event, request);
-        return toDto(eventRepository.save(event));
+        return toDto(saveWithRetry(event));
     }
 
     @DeleteMapping("/{id}")
@@ -105,6 +106,35 @@ public class EventController {
         return event;
     }
 
+    /**
+     * チェックポイントは毎回「全削除して全件作り直す」方式(Event.replaceCheckpoints)で保存しているため、
+     * 同じイベントに対する更新リクエストがほぼ同時に重なる(例: バーをドラッグした直後にチェックポイントも
+     * 操作する等)と、MySQL(InnoDB)側で event_checkpoint テーブルの削除→挿入がデッドロックすることがある。
+     * これはアプリのバグではなくInnoDBの仕様上起こり得るものなので、MySQL公式ドキュメントの推奨どおり
+     * 「デッドロックを検知したら短い待機を挟んでリトライする」方式で吸収する。
+     */
+    private static final int MAX_SAVE_RETRIES = 3;
+
+    private Event saveWithRetry(Event event) {
+        int attempt = 0;
+        while (true) {
+            try {
+                return eventRepository.save(event);
+            } catch (TransientDataAccessException ex) {
+                attempt++;
+                if (attempt >= MAX_SAVE_RETRIES) {
+                    throw ex;
+                }
+                try {
+                    Thread.sleep(50L * attempt);
+                } catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                    throw ex;
+                }
+            }
+        }
+    }
+
     private void validateDateRange(LocalDate start, LocalDate end) {
         if (start.isAfter(end)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "開始日は終了日より前(または同じ日)にしてください");
@@ -120,12 +150,18 @@ public class EventController {
         event.setStartDate(request.getStartDate());
         event.setEndDate(request.getEndDate());
         event.setGoalDate(request.getGoalDate());
+        event.setGoalColor(
+                request.getGoalColor() != null && !request.getGoalColor().isBlank() ? request.getGoalColor() : "#b3241c");
         event.replaceCheckpoints(request.getCheckpoints());
     }
 
     private EventDto toDto(Event event) {
-        List<LocalDate> checkpointDates = event.getCheckpoints().stream()
-                .map(EventCheckpoint::getCheckpointDate)
+        List<CheckpointItem> checkpointItems = event.getCheckpoints().stream()
+                .map(cp -> CheckpointItem.builder()
+                        .date(cp.getCheckpointDate())
+                        .label(cp.getLabel())
+                        .color(cp.getColor())
+                        .build())
                 .toList();
         return EventDto.builder()
                 .id(event.getId())
@@ -136,7 +172,8 @@ public class EventController {
                 .startDate(event.getStartDate())
                 .endDate(event.getEndDate())
                 .goalDate(event.getGoalDate())
-                .checkpoints(checkpointDates)
+                .goalColor(event.getGoalColor())
+                .checkpoints(checkpointItems)
                 .build();
     }
 }

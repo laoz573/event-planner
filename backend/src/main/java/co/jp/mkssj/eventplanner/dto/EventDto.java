@@ -23,5 +23,6 @@ public class EventDto {
     private LocalDate startDate;
     private LocalDate endDate;
     private LocalDate goalDate;
-    private List<LocalDate> checkpoints;
+    private String goalColor;
+    private List<CheckpointItem> checkpoints;
 }

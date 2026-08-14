@@ -1,5 +1,6 @@
 package co.jp.mkssj.eventplanner.entity;
 
+import co.jp.mkssj.eventplanner.dto.CheckpointItem;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -64,6 +65,10 @@ public class Event {
     @Column(name = "goal_date")
     private LocalDate goalDate;
 
+    /** ゴール(■)の色(#rrggbb)。デフォルトは赤系(アクセントカラー)。 */
+    @Column(name = "goal_color", nullable = false, length = 7)
+    private String goalColor = "#b3241c";
+
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @OrderBy("checkpointDate ASC")
     private List<EventCheckpoint> checkpoints = new ArrayList<>();
@@ -87,16 +92,19 @@ public class Event {
     }
 
     /**
-     * チェックポイントの日付リストで全件差し替える(既存分は orphanRemoval で自動削除)。
+     * チェックポイント(日付+内容メモ)のリストで全件差し替える(既存分は orphanRemoval で自動削除)。
      * PUT/POSTのたびに「送られてきたリストが正」として扱うシンプルな更新方針。
      */
-    public void replaceCheckpoints(List<LocalDate> dates) {
+    public void replaceCheckpoints(List<CheckpointItem> items) {
         checkpoints.clear();
-        if (dates != null) {
-            for (LocalDate date : dates) {
+        if (items != null) {
+            for (CheckpointItem item : items) {
                 EventCheckpoint checkpoint = new EventCheckpoint();
                 checkpoint.setEvent(this);
-                checkpoint.setCheckpointDate(date);
+                checkpoint.setCheckpointDate(item.getDate());
+                checkpoint.setLabel(item.getLabel() != null ? item.getLabel() : "");
+                checkpoint.setColor(
+                        item.getColor() != null && !item.getColor().isBlank() ? item.getColor() : "#1c1a17");
                 checkpoints.add(checkpoint);
             }
         }

@@ -35,4 +35,12 @@ public class EventCheckpoint {
 
     @Column(name = "checkpoint_date", nullable = false)
     private LocalDate checkpointDate;
+
+    /** チェックポイントの内容メモ(例: 「50%の問題集完了」)。未入力の場合は空文字。 */
+    @Column(nullable = false, length = 200)
+    private String label = "";
+
+    /** チェックポイント(△)の色(#rrggbb)。デフォルトは黒系。 */
+    @Column(nullable = false, length = 7)
+    private String color = "#1c1a17";
 }

@@ -105,12 +105,12 @@ function Timeline({
         ctx.endLabelEl.textContent = fmtShort(ev.endDate)
       }
     } else if (ctx.role === 'checkpoint' && ctx.cpIdx !== null) {
-      const idx = dateToIdx(ev.checkpoints[ctx.cpIdx], year)
+      const idx = dateToIdx(ev.checkpoints[ctx.cpIdx].date, year)
       const p = pctMid(idx)
       if (ctx.markerEl) {
         ctx.markerEl.style.left = `${p}%`
-        const label = ctx.markerEl.querySelector('.ep-marker-label')
-        if (label) label.textContent = fmtShort(ev.checkpoints[ctx.cpIdx])
+        const dateEl = ctx.markerEl.querySelector('.ep-marker-label-date')
+        if (dateEl) dateEl.textContent = fmtShort(ev.checkpoints[ctx.cpIdx].date)
       }
     } else if (ctx.role === 'goal') {
       const idx = dateToIdx(ev.goalDate ?? ev.startDate, year)
@@ -156,7 +156,7 @@ function Timeline({
         } else if (ctx.role === 'checkpoint' && ctx.cpIdx !== null && ctx.origCp) {
           const cpDay = clamp(dateToIdx(ctx.origCp, year) + dDays, 0, yearTotal - 1)
           const checkpoints = [...ev.checkpoints]
-          checkpoints[ctx.cpIdx] = idxToDate(cpDay, year)
+          checkpoints[ctx.cpIdx] = { ...checkpoints[ctx.cpIdx], date: idxToDate(cpDay, year) }
           ev.checkpoints = checkpoints
         } else if (ctx.role === 'goal' && ctx.origGoal) {
           const gDay = clamp(dateToIdx(ctx.origGoal, year) + dDays, 0, yearTotal - 1)
@@ -221,7 +221,7 @@ function Timeline({
       origStart: ev.startDate,
       origEnd: ev.endDate,
       cpIdx: cpIdx ?? null,
-      origCp: cpIdx !== undefined ? ev.checkpoints[cpIdx] : null,
+      origCp: cpIdx !== undefined ? ev.checkpoints[cpIdx].date : null,
       origGoal: ev.goalDate,
       arrowBodyEl,
       startLabelEl,
@@ -358,19 +358,22 @@ function Timeline({
                           {fmtShort(ev.endDate)}
                         </div>
                         {ev.checkpoints.map((cp, idx) => {
-                          const ci = dateToIdx(cp, year)
+                          const ci = dateToIdx(cp.date, year)
                           if (ci < rangeStartIdx || ci > rangeEndIdx) return null
                           const p = pctMid(ci)
                           return (
                             <div
                               key={idx}
-                              className="ep-checkpoint-marker"
+                              className={`ep-checkpoint-marker${cp.label ? ' ep-marker-has-label' : ''}`}
                               style={{ left: `${p}%` }}
-                              title={`チェックポイント: ${cp}`}
+                              title={cp.label ? `${cp.label}(${fmtShort(cp.date)})` : `チェックポイント: ${cp.date}`}
                               onPointerDown={(e) => handlePointerDown(e, ev.id, 'checkpoint', idx)}
                             >
-                              <div className="ep-triangle-shape" />
-                              <div className="ep-marker-label">{fmtShort(cp)}</div>
+                              <div className="ep-triangle-shape" style={{ borderBottomColor: cp.color }} />
+                              <div className="ep-marker-label">
+                                {cp.label && <span className="ep-marker-label-text">{cp.label}</span>}
+                                <span className="ep-marker-label-date">{fmtShort(cp.date)}</span>
+                              </div>
                             </div>
                           )
                         })}
@@ -385,7 +388,7 @@ function Timeline({
                                 title={`ゴール: ${ev.goalDate}`}
                                 onPointerDown={(e) => handlePointerDown(e, ev.id, 'goal')}
                               >
-                                <div className="ep-square-shape" />
+                                <div className="ep-square-shape" style={{ background: ev.goalColor }} />
                                 <div className="ep-marker-label">{fmtShort(ev.goalDate)}</div>
                               </div>
                             )
