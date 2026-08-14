@@ -43,6 +43,7 @@ event-planner/
 ├── frontend/                React + TypeScript (Vite)
 ├── db/init/                 MySQL初期化SQL(スキーマ)
 ├── docker/dev/               開発用の作業机コンテナ(Dockerfile・ホットリロード起動スクリプト)
+├── docker/mysql/              db/init同梱済みMySQLイメージ用Dockerfile(使い方1b・GHCR配布用)
 ├── docker-compose.yml        ローカル開発用: mysql / backend / frontend を分離
 ├── docker-compose.prod.yml   本番用(GHCRのイメージをpull。TLS終端は含まない)
 └── Makefile                  コマンド集
@@ -123,7 +124,11 @@ docker compose up --build
 「その場でビルドするより、イメージをpullしてくる方が楽」という場合はこちらです。使うファイルは
 `docker-compose.home.yml`で、`docker-compose.prod.yml`(社内サーバー向け、共有プロキシ前提)とは別物です。
 自宅のようにポートを直接公開してよい単体マシン向けに、`docker-compose.yml`と同じポート構成
-(8081/8001/3307)のまま、`build:`の代わりに`image:`でGHCRのイメージを指定しています。
+(8081/8001/3307)のまま、`build:`の代わりに`image:`でGHCRのイメージを指定しています。mysqlも
+`db/init/`配下のSQLを焼き込んだ専用イメージ(`docker/mysql/Dockerfile`)をpullする構成なので、
+**pull側のマシンには`docker-compose.home.yml`と`.env`さえあればよく、`db/init/`フォルダを含む
+リポジトリ一式を用意する必要はありません**(逆に言うと、`db/init/`をホスト側で直接編集しても
+反映されません。スキーマを変えた場合は必ずmysqlイメージも作り直してpushしてください)。
 
 **注意:** GHCRにイメージがまだ存在しない場合、`pull`はできません。**最初に一度だけ**、Dockerが使える
 環境(このリポジトリ一式がある場所ならどこでもよい)で以下を実行してイメージをビルド・pushしておく必要が
@@ -134,7 +139,8 @@ docker compose up --build
 GH_TOKEN=xxxxx make push
 ```
 
-pushが終わったら、自宅などpullしたい側では以下だけで起動できます。
+pushが終わったら、自宅などpullしたい側では`docker-compose.home.yml`と`.env`だけ用意すれば起動できます
+(リポジトリを丸ごとcloneしても問題ありませんが、必須なのはこの2ファイルだけです)。
 
 ```bash
 cd event-planner

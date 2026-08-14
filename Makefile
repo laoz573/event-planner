@@ -5,7 +5,7 @@
 
 .PHONY: dev-build dev-shell backend-build backend-run backend-dev frontend-install frontend-dev db-start db-delete \
 	docker-build up down \
-	docker-build-backend docker-build-frontend docker-build-prod login push-backend push-frontend push \
+	docker-build-backend docker-build-frontend docker-build-mysql docker-build-prod login push-backend push-frontend push-mysql push \
 	pull-prod up-prod down-prod \
 	pull-home up-home down-home \
 	local-backend-dev
@@ -88,7 +88,12 @@ docker-build-backend:
 docker-build-frontend:
 	docker build -t $(REGISTRY)/event-planner-frontend:$(TAG) ./frontend
 
-docker-build-prod: docker-build-backend docker-build-frontend
+# mysqlはdb/init配下のスキーマ初期化SQLを焼き込んだ専用イメージ(docker/mysql/Dockerfile参照)。
+# db/initを参照するため、ビルドコンテキストは(./backendや./frontendと違い)リポジトリルート。
+docker-build-mysql:
+	docker build -f docker/mysql/Dockerfile -t $(REGISTRY)/event-planner-mysql:$(TAG) .
+
+docker-build-prod: docker-build-backend docker-build-frontend docker-build-mysql
 
 # GitHub Container Registryにログイン(事前に環境変数 GH_TOKEN にトークンをセットしておくこと)
 login:
@@ -102,7 +107,11 @@ push-frontend: login
 	docker build -t $(REGISTRY)/event-planner-frontend:$(TAG) ./frontend
 	docker push $(REGISTRY)/event-planner-frontend:$(TAG)
 
-push: push-backend push-frontend
+push-mysql: login
+	docker build -f docker/mysql/Dockerfile -t $(REGISTRY)/event-planner-mysql:$(TAG) .
+	docker push $(REGISTRY)/event-planner-mysql:$(TAG)
+
+push: push-backend push-frontend push-mysql
 
 # --- GHCRのイメージから起動(ローカルでビルドせず、pushしたイメージをそのまま使う) ---
 # 使い方の例:

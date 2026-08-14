@@ -1,6 +1,8 @@
 services:
   mysql:
-    image: mysql:8.0
+    # db/init同梱済みの専用イメージ(docker/mysql/Dockerfile参照)。backend/frontendと同様、
+    # ホスト側にdb/initフォルダを用意しなくても`make push`済みのイメージだけで完結する。
+    image: ${REGISTRY:-ghcr.io/laoz573}/event-planner-mysql:${TAG:-latest}
     container_name: event-planner-mysql
     restart: unless-stopped
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
@@ -12,7 +14,6 @@ services:
     # 外部公開しない(backendコンテナからのみdocker network経由でアクセス)
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./db/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
