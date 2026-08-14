@@ -77,6 +77,16 @@ function EventListTable({
       </div>
       <div className="ep-table-scroll">
         <table className="ep-table">
+          <colgroup>
+            <col className="ep-colgroup-name" />
+            <col className="ep-colgroup-owner" />
+            <col className="ep-colgroup-period" />
+            <col className="ep-colgroup-days" />
+            <col className="ep-colgroup-cp" />
+            <col className="ep-colgroup-goal" />
+            <col className="ep-colgroup-status" />
+            <col className="ep-colgroup-edit" />
+          </colgroup>
           <thead>
             <tr>
               <th>イベント</th>
@@ -149,25 +159,25 @@ function EventListTable({
                     <tr className="ep-edit-row">
                       <td colSpan={8}>
                         <div className="ep-edit-panel">
-                          <div className="ep-edit-field">
-                            <label>色</label>
-                            <input
-                              type="color"
-                              className="ep-color-input"
-                              value={ev.color}
-                              onChange={(e) => onColorChange(ev.id, e.target.value)}
-                            />
+                          <div className="ep-edit-field ep-edit-col-name">
+                            <label>イベント</label>
+                            <div className="ep-edit-field-row">
+                              <input
+                                type="color"
+                                className="ep-color-input"
+                                title="色"
+                                value={ev.color}
+                                onChange={(e) => onColorChange(ev.id, e.target.value)}
+                              />
+                              <input
+                                type="text"
+                                value={ev.name}
+                                onChange={(e) => onNameChange(ev.id, e.target.value)}
+                                onBlur={() => onNameCommit(ev.id)}
+                              />
+                            </div>
                           </div>
-                          <div className="ep-edit-field">
-                            <label>イベント名</label>
-                            <input
-                              type="text"
-                              value={ev.name}
-                              onChange={(e) => onNameChange(ev.id, e.target.value)}
-                              onBlur={() => onNameCommit(ev.id)}
-                            />
-                          </div>
-                          <div className="ep-edit-field">
+                          <div className="ep-edit-field ep-edit-col-owner">
                             <label>担当</label>
                             <input
                               type="text"
@@ -177,7 +187,7 @@ function EventListTable({
                               onBlur={() => onOwnerCommit(ev.id)}
                             />
                           </div>
-                          <div className="ep-edit-field">
+                          <div className="ep-edit-field ep-edit-col-period">
                             <label>期間</label>
                             <div className="ep-edit-field-row">
                               <input
@@ -197,7 +207,11 @@ function EventListTable({
                               />
                             </div>
                           </div>
-                          <div className="ep-edit-field">
+                          <div className="ep-edit-field ep-edit-col-days">
+                            <label>日数</label>
+                            <span className="ep-edit-readonly-note">{countDays(ev.startDate, ev.endDate)}日</span>
+                          </div>
+                          <div className="ep-edit-field ep-edit-col-cp">
                             <label>チェックポイント</label>
                             {ev.checkpoints.map((cp, idx) => (
                               <div key={idx} className="ep-cp-row">
@@ -234,7 +248,7 @@ function EventListTable({
                               ＋ チェックポイント追加
                             </button>
                           </div>
-                          <div className="ep-edit-field">
+                          <div className="ep-edit-field ep-edit-col-goal">
                             <label>ゴール</label>
                             {ev.goalDate ? (
                               <div className="ep-edit-field-row">
@@ -262,9 +276,16 @@ function EventListTable({
                               </button>
                             )}
                           </div>
-                          <div className="ep-edit-field ep-edit-field-delete">
+                          <div className="ep-edit-field ep-edit-col-status">
+                            <label>状態</label>
+                            <span className={`ep-status-badge ${statusClass(status)}`}>{status}</span>
+                            <span className="ep-edit-readonly-note" title="状態は期間の開始日・終了日から自動的に計算されます">
+                              自動算出
+                            </span>
+                          </div>
+                          <div className="ep-edit-field ep-edit-col-delete">
                             <button className="ep-row-del" onClick={() => onRemoveEvent(ev.id)}>
-                              🗑 このイベントを削除
+                              🗑 削除
                             </button>
                           </div>
                         </div>

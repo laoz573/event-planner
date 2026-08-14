@@ -831,6 +831,34 @@ button:disabled {
   border-collapse: collapse;
   width: 100%;
   min-width: 900px;
+  table-layout: fixed;
+}
+
+/* 一覧のヘッダー/セル幅と、編集パネル(.ep-edit-panel)のグリッド幅を揃えるための列幅定義。
+   どちらも同じ%を使うことで、編集時の入力欄が対応する見出し列の真下に並ぶようにしている。 */
+.ep-colgroup-name {
+  width: 20%;
+}
+.ep-colgroup-owner {
+  width: 10%;
+}
+.ep-colgroup-period {
+  width: 15%;
+}
+.ep-colgroup-days {
+  width: 6%;
+}
+.ep-colgroup-cp {
+  width: 21%;
+}
+.ep-colgroup-goal {
+  width: 12%;
+}
+.ep-colgroup-status {
+  width: 9%;
+}
+.ep-colgroup-edit {
+  width: 7%;
 }
 
 .ep-table thead th {
@@ -857,6 +885,8 @@ button:disabled {
 .ep-col-name-display {
   font-weight: 700;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .ep-name-swatch {
@@ -870,11 +900,15 @@ button:disabled {
 .ep-col-owner-display {
   color: var(--ink-muted);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .ep-col-period-display {
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .ep-col-days-display {
@@ -885,6 +919,8 @@ button:disabled {
 
 .ep-col-goal-display {
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .ep-col-cp-display {
@@ -974,13 +1010,17 @@ button:disabled {
 
 .ep-edit-row td {
   background: var(--bg-panel-alt) !important;
-  padding: 16px !important;
+  padding: 14px 0 !important;
 }
 
+/* 一覧のth/td(colgroup参照)と同じ%幅にすることで、各入力欄が対応する見出し列の真下に
+   並ぶようにしている。.ep-tableはmin-width:900pxで.ep-table-scrollが横スクロールする
+   ので、狭い画面でも見出しと編集欄は常に同じ幅比率のまま(横スクロール込みで)揃う。 */
 .ep-edit-panel {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 14px;
+  grid-template-columns: 20% 10% 15% 6% 21% 12% 9% 7%;
+  gap: 14px 0;
+  align-items: start;
 }
 
 .ep-edit-field {
@@ -988,6 +1028,22 @@ button:disabled {
   flex-direction: column;
   gap: 5px;
   min-width: 0;
+  padding: 0 10px;
+}
+
+.ep-edit-col-status {
+  align-items: flex-start;
+}
+
+.ep-edit-readonly-note {
+  font-size: 10.5px;
+  color: var(--ink-faint);
+  white-space: nowrap;
+}
+
+.ep-edit-col-delete {
+  align-items: flex-end;
+  justify-content: flex-end;
 }
 
 .ep-edit-field label {
@@ -1016,10 +1072,6 @@ button:disabled {
 .ep-edit-field-row input[type='date'] {
   min-width: 0;
   flex: 1 1 118px;
-}
-
-.ep-edit-field-delete {
-  justify-content: flex-end;
 }
 
 .ep-color-input {
@@ -1109,6 +1161,7 @@ button:disabled {
   font-weight: 700;
   padding: 6px 10px;
   border: 1px solid var(--accent);
+  white-space: nowrap;
 }
 
 .ep-row-del:hover {

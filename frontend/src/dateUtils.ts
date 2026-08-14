@@ -24,12 +24,13 @@ export function idxToDate(idx: number, year: number): string {
 export function clamp(v: number, min: number, max: number) {
   return Math.min(Math.max(v, min), max)
 }
-/** 'YYYY-MM-DD' -> 'M/DD' (月は0埋めなし、日は2桁0埋め。EVENT LISTテーブルの表記に合わせている) */
+/** 'YYYY-MM-DD' -> 'M/D' (月・日ともに0埋めなしで統一。例: '2026-09-04' -> '9/4') */
 export function fmtShort(dateStr: string | null): string {
   if (!dateStr) return ''
   const parts = dateStr.split('-')
   const month = Number(parts[1])
-  return `${month}/${parts[2]}`
+  const day = Number(parts[2])
+  return `${month}/${day}`
 }
 export function pctNum(idx: number, total: number) {
   return (idx / total) * 100
