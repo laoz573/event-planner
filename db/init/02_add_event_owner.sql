@@ -9,5 +9,16 @@
 --   (b) 既存データを残したい場合: このファイルの中身を直接、稼働中のMySQLに対して実行する
 --       例: docker compose exec -T mysql mysql -u appuser -p event-planner < db/init/02_add_event_owner.sql
 --
--- MySQL 8.0.29以降は ADD COLUMN IF NOT EXISTS に対応しているため、複数回実行してもエラーにならない。
-ALTER TABLE event ADD COLUMN IF NOT EXISTS owner VARCHAR(50) NOT NULL DEFAULT '' AFTER name;
+-- 【重要】`ALTER TABLE ... ADD COLUMN IF NOT EXISTS ...` はMariaDBの拡張構文であり、
+-- 本家(Oracle)のMySQLではサポートされていない(バージョンを問わずERROR 1064になる)。
+-- そのため、information_schemaで列の存在を確認したうえで動的SQLとして実行する形にして、
+-- 複数回実行してもエラーにならないようにしている(実MySQL 8.0.46で動作確認済み)。
+SET @stmt = (SELECT IF(
+    (SELECT COUNT(*) FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'event' AND COLUMN_NAME = 'owner') = 0,
+    "ALTER TABLE event ADD COLUMN owner VARCHAR(50) NOT NULL DEFAULT '' AFTER name",
+    'SELECT 1'
+));
+PREPARE stmt FROM @stmt;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
