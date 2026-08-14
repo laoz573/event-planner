@@ -1,13 +1,15 @@
 # 自宅など「その場でビルドせず、GHCRからpullしたイメージだけで動かしたい」環境向けの構成。
-# docker-compose.yml との違いは backend/frontend が build: ではなく image: になっている点だけ
-# (mysqlとポート構成・ネットワークはdocker-compose.ymlと同じ。shared-proxy-netやTLS終端は使わない、
-#  単体のマシンで直接ポート公開する前提)。
+# docker-compose.yml との違いは backend/frontend/mysql がすべて build: ではなく image: になっている点
+# (mysqlもdb/init同梱済みの専用イメージ。docker/mysql/Dockerfile参照)。これにより、このファイルと
+# .env さえあれば、リポジトリの他のファイル(db/initフォルダ含む)を持ってこなくても
+# `docker compose pull && up -d` だけで動く(ポート構成・ネットワークはdocker-compose.ymlと同じ。
+# shared-proxy-netやTLS終端は使わない、単体のマシンで直接ポート公開する前提)。
 #
 # 事前に一度、Dockerが使える環境(このリポジトリを持っているPCなど)で `make push` を実行し、
 # GHCRにイメージをpushしておく必要がある。その後はこのファイルで `docker compose pull && up -d` するだけでよい。
 services:
   mysql:
-    image: mysql:8.0
+    image: ${REGISTRY:-ghcr.io/laoz573}/event-planner-mysql:${TAG:-latest}
     container_name: event-planner-mysql
     restart: unless-stopped
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
@@ -20,7 +22,6 @@ services:
       - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./db/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
