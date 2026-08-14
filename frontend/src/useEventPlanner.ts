@@ -6,6 +6,10 @@ import { clamp, dateToIdx, idxToDate, todayDateStr, totalDaysInYear } from './da
 const DEFAULT_COLOR = '#2b2b2b'
 const DEFAULT_CHECKPOINT_COLOR = '#1c1a17'
 const DEFAULT_GOAL_COLOR = '#b3241c'
+// バックエンドはイベント名を必須(空文字不可)としているため、新規作成時はこの文字列で保存する。
+// ただしフロント側では、この初期値のままの入力欄をクリックした瞬間にプレースホルダー扱いで
+// 空欄表示にする(EventListTable.tsx / Timeline.tsx参照)。
+export const DEFAULT_EVENT_NAME = '新しいイベント'
 
 function toPayload(ev: EventItem): EventUpsertPayload {
   return {
@@ -94,7 +98,7 @@ export function useEventPlanner(year: number) {
     const endIdx = Math.min(startIdx + 29, total - 1)
     const payload: EventUpsertPayload = {
       year,
-      name: '新しいイベント',
+      name: DEFAULT_EVENT_NAME,
       owner: '',
       color: DEFAULT_COLOR,
       startDate: idxToDate(startIdx, year),

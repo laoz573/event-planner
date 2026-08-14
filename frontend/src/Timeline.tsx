@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useRef } from 'react'
 import type { Dispatch, PointerEvent as ReactPointerEvent, SetStateAction } from 'react'
 import type { EventItem } from './types'
+import { DEFAULT_EVENT_NAME } from './useEventPlanner'
 import {
   MONTH_NAMES,
   clamp,
@@ -284,9 +285,21 @@ function Timeline({
                     <input
                       className="ep-name-chart"
                       value={ev.name}
+                      placeholder={DEFAULT_EVENT_NAME}
                       onChange={(e) => onNameChange(ev.id, e.target.value)}
-                      onFocus={(e) => e.target.select()}
-                      onBlur={() => onNameCommit(ev.id)}
+                      onFocus={(e) => {
+                        if (ev.name === DEFAULT_EVENT_NAME) {
+                          onNameChange(ev.id, '')
+                        } else {
+                          e.target.select()
+                        }
+                      }}
+                      onBlur={() => {
+                        if (ev.name.trim() === '') {
+                          onNameChange(ev.id, DEFAULT_EVENT_NAME)
+                        }
+                        onNameCommit(ev.id)
+                      }}
                     />
                     <input
                       className="ep-owner-chart"
