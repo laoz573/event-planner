@@ -1,6 +1,7 @@
 import { Fragment, useState } from 'react'
 import type { EventItem } from './types'
 import { computeStatus, countDays, fmtShort, formatPeriod, todayDateStr } from './dateUtils'
+import { DEFAULT_EVENT_NAME } from './useEventPlanner'
 
 interface EventListTableProps {
   title: string
@@ -172,9 +173,21 @@ function EventListTable({
                               <input
                                 type="text"
                                 value={ev.name}
+                                placeholder={DEFAULT_EVENT_NAME}
                                 onChange={(e) => onNameChange(ev.id, e.target.value)}
-                                onFocus={(e) => e.target.select()}
-                                onBlur={() => onNameCommit(ev.id)}
+                                onFocus={(e) => {
+                                  if (ev.name === DEFAULT_EVENT_NAME) {
+                                    onNameChange(ev.id, '')
+                                  } else {
+                                    e.target.select()
+                                  }
+                                }}
+                                onBlur={() => {
+                                  if (ev.name.trim() === '') {
+                                    onNameChange(ev.id, DEFAULT_EVENT_NAME)
+                                  }
+                                  onNameCommit(ev.id)
+                                }}
                               />
                             </div>
                           </div>
