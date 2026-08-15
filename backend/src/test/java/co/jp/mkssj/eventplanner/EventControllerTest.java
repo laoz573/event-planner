@@ -4,7 +4,10 @@ import co.jp.mkssj.eventplanner.dto.AuthResponseDto;
 import co.jp.mkssj.eventplanner.dto.CheckpointItem;
 import co.jp.mkssj.eventplanner.dto.EventDto;
 import co.jp.mkssj.eventplanner.dto.EventUpsertRequest;
+import co.jp.mkssj.eventplanner.dto.LoginRequest;
 import co.jp.mkssj.eventplanner.dto.RegisterRequest;
+import co.jp.mkssj.eventplanner.entity.AppUser;
+import co.jp.mkssj.eventplanner.repository.AppUserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +18,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -26,6 +30,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * イベントCRUD APIのスモークテスト。H2(インメモリ)を使い、
  * ユーザー登録→ログイン→作成→年で一覧取得→更新→削除まで一通りの動作を確認する。
  * あわせて未認証アクセスの拒否と、他ユーザーのイベントが見えないことも検証する。
+ *
+ * /api/auth/register は外部公開に伴いログイン必須になったため、@BeforeEachでは
+ * AppUserRepositoryで直接ブートストラップ用ユーザーを作成してログインし、トークンを取得する
+ * (AuthControllerTestと同じ方針)。
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class EventControllerTest {
@@ -33,18 +41,27 @@ class EventControllerTest {
     @Autowired
     private TestRestTemplate restTemplate;
 
+    @Autowired
+    private AppUserRepository appUserRepository;
+
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
     private String token;
 
     @BeforeEach
     void registerAndLogin() {
         String username = "test-" + UUID.randomUUID();
-        RegisterRequest registerRequest = new RegisterRequest();
-        registerRequest.setUsername(username);
-        registerRequest.setPassword("password123");
+        AppUser user = new AppUser();
+        user.setUsername(username);
+        user.setPasswordHash(passwordEncoder.encode("password123"));
+        appUserRepository.save(user);
 
+        LoginRequest loginRequest = new LoginRequest();
+        loginRequest.setUsername(username);
+        loginRequest.setPassword("password123");
         ResponseEntity<AuthResponseDto> response =
-                restTemplate.postForEntity("/api/auth/register", registerRequest, AuthResponseDto.class);
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+                restTemplate.postForEntity("/api/auth/login", loginRequest, AuthResponseDto.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
         this.token = response.getBody().getToken();
     }
@@ -52,6 +69,20 @@ class EventControllerTest {
     private HttpHeaders authHeaders() {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(token);
+        return headers;
+    }
+
+    /** ログイン中のユーザー(@BeforeEachで作成済み)のトークンで、もう1人分のアカウントを作って返す。 */
+    private HttpHeaders registerAnotherUserAndGetHeaders() {
+        String otherUsername = "test-" + UUID.randomUUID();
+        RegisterRequest registerRequest = new RegisterRequest();
+        registerRequest.setUsername(otherUsername);
+        registerRequest.setPassword("password123");
+        ResponseEntity<AuthResponseDto> response = restTemplate.exchange(
+                "/api/auth/register", HttpMethod.POST, new HttpEntity<>(registerRequest, authHeaders()), AuthResponseDto.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(response.getBody().getToken());
         return headers;
     }
 
@@ -163,15 +194,8 @@ class EventControllerTest {
                 "/api/events", HttpMethod.POST, new HttpEntity<>(createRequest, authHeaders()), EventDto.class);
         Long ownEventId = createResponse.getBody().getId();
 
-        // 別ユーザーを登録してログイン
-        String otherUsername = "test-" + UUID.randomUUID();
-        RegisterRequest otherRegister = new RegisterRequest();
-        otherRegister.setUsername(otherUsername);
-        otherRegister.setPassword("password123");
-        ResponseEntity<AuthResponseDto> otherAuth =
-                restTemplate.postForEntity("/api/auth/register", otherRegister, AuthResponseDto.class);
-        HttpHeaders otherHeaders = new HttpHeaders();
-        otherHeaders.setBearerAuth(otherAuth.getBody().getToken());
+        // 別ユーザーを(ログイン中のユーザーが)作成
+        HttpHeaders otherHeaders = registerAnotherUserAndGetHeaders();
 
         // 別ユーザーの一覧には出てこない
         ResponseEntity<EventDto[]> otherList = restTemplate.exchange(

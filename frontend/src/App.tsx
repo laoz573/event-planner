@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
 import PlannerShell from './PlannerShell'
 import Login from './Login'
-import Register from './Register'
 import { AUTH_EXPIRED_EVENT, clearAuth, getUsername, isLoggedIn } from './auth'
 import './App.css'
 
-type View = 'login' | 'register' | 'planner'
+type View = 'login' | 'planner'
 
-// ログイン状態に応じて login / register / planner の3画面を切り替えるシンプルな状態遷移にしている。
+// ログイン状態に応じて login / planner の2画面を切り替えるシンプルな状態遷移にしている。
+// 外部公開にあたり自己登録(新規登録画面)は廃止した。新しいアカウントは、
+// 既にログイン済みの利用者が設定画面の「アカウント管理」から作成する(Register.tsx参照)。
 // plannerに入った後の「年間計画・四半期・担当別・設定」タブの切り替えはPlannerShellが受け持つ。
 function App() {
   const [view, setView] = useState<View>(isLoggedIn() ? 'planner' : 'login')
@@ -35,11 +36,7 @@ function App() {
   }
 
   if (view === 'login') {
-    return <Login onLoggedIn={handleLoggedIn} onGoToRegister={() => setView('register')} />
-  }
-
-  if (view === 'register') {
-    return <Register onRegistered={handleLoggedIn} onGoToLogin={() => setView('login')} />
+    return <Login onLoggedIn={handleLoggedIn} />
   }
 
   return <PlannerShell username={username} onLogout={handleLogout} />

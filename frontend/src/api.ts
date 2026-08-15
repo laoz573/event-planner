@@ -1,4 +1,4 @@
-import type { EventItem, EventUpsertPayload } from './types'
+import type { EventItem, EventUpsertPayload, ShareSetting, UserSummary } from './types'
 import { AUTH_EXPIRED_EVENT, clearAuth, getToken } from './auth'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '/api'
@@ -58,8 +58,11 @@ export async function login(username: string, password: string): Promise<AuthRes
   return handle<AuthResponse>(res, 'ログインに失敗しました')
 }
 
+// 外部公開にあたり自己登録を廃止したため、/api/auth/register はログイン必須(JwtAuthFilter対象)になった。
+// そのため、他のエンドポイントと同様にauthFetch(Authorizationヘッダー付き)で呼び出す。
+// 未ログイン状態で呼ぶと401が返り、authFetch側でログイン画面に戻すイベントが発火する。
 export async function register(username: string, password: string): Promise<AuthResponse> {
-  const res = await fetch(`${API_BASE}/auth/register`, {
+  const res = await authFetch(`${API_BASE}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password })
@@ -93,4 +96,38 @@ export async function updateEvent(id: number, payload: EventUpsertPayload): Prom
 export async function deleteEvent(id: number): Promise<void> {
   const res = await authFetch(`${API_BASE}/events/${id}`, { method: 'DELETE' })
   return handle<void>(res, 'イベントの削除に失敗しました')
+}
+
+/** 他のユーザーから共有されているイベント一覧(閲覧専用)。 */
+export async function fetchSharedEvents(year: number): Promise<EventItem[]> {
+  const res = await authFetch(`${API_BASE}/events/shared?year=${year}`)
+  return handle<EventItem[]>(res, '共有されたイベントの取得に失敗しました')
+}
+
+/** イベント共有の相手を選ぶ画面向けに、自分以外の既存ユーザー一覧を取得する。 */
+export async function fetchUsers(): Promise<UserSummary[]> {
+  const res = await authFetch(`${API_BASE}/users`)
+  return handle<UserSummary[]>(res, 'ユーザー一覧の取得に失敗しました')
+}
+
+/** 自分(ログイン中のユーザー)が誰にどう共有しているかの一覧。 */
+export async function fetchShares(): Promise<ShareSetting[]> {
+  const res = await authFetch(`${API_BASE}/shares`)
+  return handle<ShareSetting[]>(res, '共有設定の取得に失敗しました')
+}
+
+/** 指定ユーザーへの共有設定を作成・更新する(shareAll=falseのときeventIdsが共有対象)。 */
+export async function upsertShare(sharedWithUserId: number, shareAll: boolean, eventIds: number[]): Promise<ShareSetting> {
+  const res = await authFetch(`${API_BASE}/shares/${sharedWithUserId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ shareAll, eventIds })
+  })
+  return handle<ShareSetting>(res, '共有設定の更新に失敗しました')
+}
+
+/** 指定ユーザーへの共有を完全に解除する。 */
+export async function deleteShare(sharedWithUserId: number): Promise<void> {
+  const res = await authFetch(`${API_BASE}/shares/${sharedWithUserId}`, { method: 'DELETE' })
+  return handle<void>(res, '共有の解除に失敗しました')
 }
