@@ -4,11 +4,12 @@ import { setAuth } from './auth'
 
 interface LoginProps {
   onLoggedIn: () => void
-  onGoToRegister: () => void
 }
 
 // household の Login 画面(中央寄せのシンプルなフォーム)を踏襲したログイン画面。
-function Login({ onLoggedIn, onGoToRegister }: LoginProps) {
+// 外部公開にあたり自己登録(新規登録リンク)は廃止した。新しいアカウントは、
+// 既にログイン済みの利用者が設定画面の「アカウント管理」から作成する運用にしている。
+function Login({ onLoggedIn }: LoginProps) {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -63,13 +64,6 @@ function Login({ onLoggedIn, onGoToRegister }: LoginProps) {
         <button type="submit" className="auth-submit" disabled={submitting}>
           {submitting ? 'ログイン中...' : 'ログイン'}
         </button>
-
-        <p className="auth-link">
-          アカウントをお持ちでない方は{' '}
-          <button type="button" className="auth-link-btn" onClick={onGoToRegister}>
-            新規登録
-          </button>
-        </p>
       </form>
     </div>
   )

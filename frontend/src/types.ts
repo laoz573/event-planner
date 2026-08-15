@@ -18,6 +18,8 @@ export interface EventItem {
   goalDate: string | null
   goalColor: string
   checkpoints: CheckpointItem[]
+  /** 自分のイベント(GET /api/events)ではundefined。共有されたイベント(GET /api/events/shared)では共有元のユーザー名。 */
+  ownerUsername?: string | null
 }
 
 export interface EventUpsertPayload {
@@ -33,3 +35,17 @@ export interface EventUpsertPayload {
 }
 
 export type EventStatus = '予定' | '進行中' | '完了'
+
+/** イベント共有の相手を選ぶ画面向けの、自分以外の既存ユーザー。 */
+export interface UserSummary {
+  id: number
+  username: string
+}
+
+/** 自分が誰にどう共有しているかの1件分。shareAll=trueのときeventIdsは空配列。 */
+export interface ShareSetting {
+  sharedWithUserId: number
+  sharedWithUsername: string
+  shareAll: boolean
+  eventIds: number[]
+}

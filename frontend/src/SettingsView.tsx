@@ -1,5 +1,7 @@
 import type { EventItem } from './types'
 import { downloadEventsCsv } from './csv'
+import Register from './Register'
+import ShareSettingsCard from './ShareSettingsCard'
 
 interface SettingsViewProps {
   username: string | null
@@ -22,11 +24,43 @@ function SettingsView({ username, year, events, onLogout }: SettingsViewProps) {
           </div>
           <div className="ep-settings-row">
             <span className="ep-settings-label">データの分離</span>
-            <span className="ep-settings-value">イベントはユーザーごとに保存され、他のユーザーからは見えません</span>
+            <span className="ep-settings-value">
+              イベントはユーザーごとに保存され、他のユーザーからは基本的に見えません(下の「イベント共有」で明示的に共有した分を除く)
+            </span>
           </div>
           <button className="ep-btn-ghost ep-settings-logout" onClick={onLogout}>
             ログアウト
           </button>
+        </div>
+      </div>
+
+      <div className="ep-chart-card ep-settings-card">
+        <div className="ep-chart-card-head">
+          <h3>アカウント管理</h3>
+        </div>
+        <div className="ep-settings-body">
+          <div className="ep-settings-row">
+            <span className="ep-settings-label">新しいアカウント</span>
+            <span className="ep-settings-value">
+              外部公開に伴い自己登録は廃止しました。他の人が使うアカウントは、ログイン中のここから作成してください
+            </span>
+          </div>
+          <Register />
+        </div>
+      </div>
+
+      <div className="ep-chart-card ep-settings-card ep-settings-card-wide">
+        <div className="ep-chart-card-head">
+          <h3>イベント共有</h3>
+        </div>
+        <div className="ep-settings-body">
+          <div className="ep-settings-row">
+            <span className="ep-settings-label">共有について</span>
+            <span className="ep-settings-value">
+              既存のユーザーを選んで、自分のイベントを共有できます。共有されたイベントは相手の「共有されたイベント」タブに表示されますが、閲覧のみで編集・削除はできません
+            </span>
+          </div>
+          <ShareSettingsCard year={year} events={events} />
         </div>
       </div>
 

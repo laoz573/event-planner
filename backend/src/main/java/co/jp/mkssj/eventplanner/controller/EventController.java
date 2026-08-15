@@ -3,7 +3,9 @@ package co.jp.mkssj.eventplanner.controller;
 import co.jp.mkssj.eventplanner.dto.CheckpointItem;
 import co.jp.mkssj.eventplanner.dto.EventDto;
 import co.jp.mkssj.eventplanner.dto.EventUpsertRequest;
+import co.jp.mkssj.eventplanner.entity.AppUser;
 import co.jp.mkssj.eventplanner.entity.Event;
+import co.jp.mkssj.eventplanner.repository.AppUserRepository;
 import co.jp.mkssj.eventplanner.repository.EventRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -33,6 +35,7 @@ import java.util.List;
  *
  * 例:
  * GET    /api/events?year=2026
+ * GET    /api/events/shared?year=2026 (他ユーザーから共有されたイベント。閲覧専用)
  * POST   /api/events
  * PUT    /api/events/{id}
  * DELETE /api/events/{id}
@@ -43,6 +46,7 @@ import java.util.List;
 public class EventController {
 
     private final EventRepository eventRepository;
+    private final AppUserRepository appUserRepository;
 
     @GetMapping
     public List<EventDto> list(@RequestParam(required = false) Integer year, HttpServletRequest request) {
@@ -50,6 +54,20 @@ public class EventController {
         int targetYear = year != null ? year : Year.now().getValue();
         return eventRepository.findByUserIdAndYearOrderByStartDateAscIdAsc(userId, targetYear).stream()
                 .map(this::toDto)
+                .toList();
+    }
+
+    /**
+     * 他のユーザーから共有されているイベント一覧(閲覧専用)。
+     * ShareController経由でshareAll、またはイベント単位で共有されたものが対象。
+     * 各イベントに共有元のユーザー名(ownerUsername)を付与して返す。
+     */
+    @GetMapping("/shared")
+    public List<EventDto> listShared(@RequestParam(required = false) Integer year, HttpServletRequest request) {
+        Long userId = currentUserId(request);
+        int targetYear = year != null ? year : Year.now().getValue();
+        return eventRepository.findSharedWithUser(userId, targetYear).stream()
+                .map(this::toSharedDto)
                 .toList();
     }
 
@@ -175,5 +193,15 @@ public class EventController {
                 .goalColor(event.getGoalColor())
                 .checkpoints(checkpointItems)
                 .build();
+    }
+
+    /** toDtoに加えて、共有元(イベントの本来の所有者)のユーザー名をownerUsernameに設定する。 */
+    private EventDto toSharedDto(Event event) {
+        EventDto dto = toDto(event);
+        String ownerUsername = appUserRepository.findById(event.getUserId())
+                .map(AppUser::getUsername)
+                .orElse(null);
+        dto.setOwnerUsername(ownerUsername);
+        return dto;
     }
 }

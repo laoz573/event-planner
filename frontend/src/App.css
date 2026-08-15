@@ -41,6 +41,11 @@ body {
   font-size: 13px;
 }
 
+.success-text {
+  color: #2e7d32;
+  font-size: 13px;
+}
+
 /* ===== 認証画面(ログイン・新規登録) ===== */
 .auth-page {
   min-height: 100vh;
@@ -861,6 +866,29 @@ button:disabled {
   width: 7%;
 }
 
+/* 「共有されたイベント」タブ用(編集列が無い分、7列で100%になるよう再配分)。 */
+.ep-colgroup-shared-name {
+  width: 22%;
+}
+.ep-colgroup-shared-owner {
+  width: 12%;
+}
+.ep-colgroup-shared-period {
+  width: 16%;
+}
+.ep-colgroup-shared-days {
+  width: 7%;
+}
+.ep-colgroup-shared-cp {
+  width: 22%;
+}
+.ep-colgroup-shared-goal {
+  width: 13%;
+}
+.ep-colgroup-shared-status {
+  width: 8%;
+}
+
 .ep-table thead th {
   background: var(--line);
   color: #fff;
@@ -1188,6 +1216,131 @@ button:disabled {
   margin-bottom: 0;
 }
 
+.ep-settings-card-wide {
+  grid-column: 1 / -1;
+}
+
+/* ===== イベント共有(設定タブ) ===== */
+.ep-share-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ep-share-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ep-share-list-item {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-page);
+}
+
+.ep-share-list-username {
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.ep-share-list-mode {
+  font-size: 12px;
+  color: var(--ink-muted);
+  flex: 1;
+}
+
+.ep-share-list-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.ep-share-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-page);
+}
+
+.ep-share-form .auth-field {
+  margin-bottom: 0;
+}
+
+.ep-share-form select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.ep-share-mode-toggle {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.ep-share-mode-toggle label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.ep-share-event-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+}
+
+.ep-share-event-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.ep-share-event-name {
+  flex: 1;
+}
+
+.ep-share-event-period {
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+
+.ep-share-form-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* ===== 共有されたイベント(閲覧専用タブ) ===== */
+.ep-statbar-shared {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
 .ep-settings-body {
   display: flex;
   flex-direction: column;
@@ -1211,6 +1364,21 @@ button:disabled {
   font-size: 13px;
   color: var(--ink);
   line-height: 1.5;
+}
+
+.ep-register-form {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ep-register-form .auth-field {
+  margin-bottom: 0;
+}
+
+.ep-register-form .ep-btn-primary {
+  align-self: flex-start;
+  margin-top: 6px;
 }
 
 .ep-settings-logout {

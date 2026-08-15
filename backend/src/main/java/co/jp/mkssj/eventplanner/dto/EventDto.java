@@ -25,4 +25,10 @@ public class EventDto {
     private LocalDate goalDate;
     private String goalColor;
     private List<CheckpointItem> checkpoints;
+
+    /**
+     * 自分が所有するイベント(GET /api/events)ではnull。
+     * 他ユーザーから共有されたイベント(GET /api/events/shared)では、共有元のユーザー名が入る。
+     */
+    private String ownerUsername;
 }

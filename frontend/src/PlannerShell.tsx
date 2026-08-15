@@ -3,14 +3,16 @@ import { useEventPlanner } from './useEventPlanner'
 import AnnualView from './AnnualView'
 import QuarterView from './QuarterView'
 import ByOwnerView from './ByOwnerView'
+import SharedEventsView from './SharedEventsView'
 import SettingsView from './SettingsView'
 
-type Tab = 'annual' | 'quarter' | 'owner' | 'settings'
+type Tab = 'annual' | 'quarter' | 'owner' | 'shared' | 'settings'
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'annual', label: '年間計画' },
   { key: 'quarter', label: '四半期' },
   { key: 'owner', label: '担当別' },
+  { key: 'shared', label: '共有されたイベント' },
   { key: 'settings', label: '設定' }
 ]
 
@@ -64,6 +66,7 @@ function PlannerShell({ username, onLogout }: PlannerShellProps) {
         {tab === 'annual' && <AnnualView year={year} setYear={setYear} {...planner} />}
         {tab === 'quarter' && <QuarterView year={year} setYear={setYear} {...planner} />}
         {tab === 'owner' && <ByOwnerView year={year} setYear={setYear} {...planner} />}
+        {tab === 'shared' && <SharedEventsView year={year} setYear={setYear} />}
         {tab === 'settings' && (
           <SettingsView username={username} year={year} events={planner.events} onLogout={onLogout} />
         )}
