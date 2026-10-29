@@ -5,6 +5,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 
 public interface EventRepository extends JpaRepository<Event, Long> {
@@ -21,4 +24,10 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             + "OR e.id IN (SELECT es.eventId FROM EventShare es WHERE es.sharedWithUserId = :userId)"
             + ") ORDER BY e.startDate ASC, e.id ASC")
     List<Event> findSharedWithUser(@Param("userId") Long userId, @Param("year") Integer year);
+
+    /** ジャンル削除時に、そのジャンルを選んでいたイベントを「未選択」(null)へ戻す。 */
+    @Modifying(clearAutomatically = true)
+    @Transactional
+    @Query("UPDATE Event e SET e.genreId = null WHERE e.userId = :userId AND e.genreId = :genreId")
+    void clearGenre(@Param("userId") Long userId, @Param("genreId") Long genreId);
 }

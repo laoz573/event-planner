@@ -1,6 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { EventItem, EventUpsertPayload } from './types'
-import { createEvent, deleteEvent, fetchEvents, updateEvent } from './api'
+import type { EventItem, EventUpsertPayload, GenreItem, StatusCode } from './types'
+import {
+  createEvent,
+  createGenre,
+  deleteEvent,
+  deleteGenre,
+  fetchEvents,
+  fetchGenres,
+  updateEvent,
+  updateGenre
+} from './api'
 import { clamp, dateToIdx, idxToDate, todayDateStr, totalDaysInYear } from './dateUtils'
 
 const DEFAULT_COLOR = '#2b2b2b'
@@ -21,7 +30,11 @@ function toPayload(ev: EventItem): EventUpsertPayload {
     endDate: ev.endDate,
     goalDate: ev.goalDate,
     goalColor: ev.goalColor,
-    checkpoints: ev.checkpoints
+    checkpoints: ev.checkpoints,
+    // ジャンル(未選択はnull)。実績タブはジャンルを選んだイベントだけを対象にする。
+    genreId: ev.genreId ?? null,
+    // 状態の手動指定(nullなら日付から自動算出)
+    status: ev.status ?? null
   }
 }
 
@@ -40,6 +53,8 @@ export function useEventPlanner(year: number) {
   const [error, setError] = useState<string | null>(null)
   const [savingIds, setSavingIds] = useState<Set<number>>(new Set())
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null)
+  // ジャンル一覧は編集パネルの選択・設定タブ・実績タブで共有するので、ここで1回だけ読み込む
+  const [genres, setGenres] = useState<GenreItem[]>([])
   // 同じイベントIDへの保存リクエストが重ならないようにするためのキュー(id -> 直前の保存を表すPromise)。
   // バーのドラッグ直後にチェックポイントも操作する、といった連続操作で2件のPUTが同時に飛ぶと、
   // サーバー側(MySQL)でチェックポイント行の削除・再作成がデッドロックすることがあるため、
@@ -57,6 +72,14 @@ export function useEventPlanner(year: number) {
       .finally(() => setLoading(false))
   }, [year])
 
+  useEffect(() => {
+    fetchGenres()
+      .then(setGenres)
+      .catch(() => {
+        // 取得に失敗しても他の機能は使えるので、一覧は空のままにしておく
+      })
+  }, [])
+
   const markSaving = (id: number, saving: boolean) => {
     setSavingIds((prev) => {
       const next = new Set(prev)
@@ -71,7 +94,15 @@ export function useEventPlanner(year: number) {
       markSaving(ev.id, true)
       return updateEvent(ev.id, toPayload(ev))
         .then((saved) => {
-          setEvents((prev) => prev.map((e) => (e.id === saved.id ? saved : e)))
+          // サーバーはチェックポイントを日付順で返す。画面側はindexで編集対象を特定しているので、
+          // 件数が同じなら手元の並びを保つ(並びが入れ替わると別のチェックポイントを編集してしまうため)。
+          setEvents((prev) =>
+            prev.map((e) =>
+              e.id === saved.id
+                ? { ...saved, checkpoints: e.checkpoints.length === saved.checkpoints.length ? e.checkpoints : saved.checkpoints }
+                : e
+            )
+          )
           setLastSavedAt(new Date())
         })
         .catch((err) => setError(errorMessage(err)))
@@ -105,7 +136,9 @@ export function useEventPlanner(year: number) {
       endDate: idxToDate(endIdx, year),
       goalDate: null,
       goalColor: DEFAULT_GOAL_COLOR,
-      checkpoints: []
+      checkpoints: [],
+      genreId: null,
+      status: null
     }
     setError(null)
     createEvent(payload)
@@ -156,6 +189,20 @@ export function useEventPlanner(year: number) {
     })
   }
   const handleColorChange = (id: number, color: string) => updateLocalAndPersist(id, { color })
+  const handleStatusChange = (id: number, status: StatusCode | null) => updateLocalAndPersist(id, { status })
+  const handleGenreChange = (id: number, genreId: number | null) => updateLocalAndPersist(id, { genreId })
+
+  // ---- ジャンル管理(設定タブ)。失敗時はrejectするので、呼び出し側でエラー表示する ----
+  const addGenre = (name: string): Promise<void> =>
+    createGenre(name).then((g) => setGenres((prev) => [...prev, g]))
+  const renameGenre = (id: number, name: string): Promise<void> =>
+    updateGenre(id, name).then((g) => setGenres((prev) => prev.map((x) => (x.id === g.id ? g : x))))
+  const removeGenre = (id: number): Promise<void> =>
+    deleteGenre(id).then(() => {
+      setGenres((prev) => prev.filter((x) => x.id !== id))
+      // サーバー側でそのジャンルを選んでいたイベントは未選択に戻るので、手元の状態も揃える
+      setEvents((prev) => prev.map((e) => (e.genreId === id ? { ...e, genreId: null } : e)))
+    })
   const handleStartChange = (id: number, startDate: string) => {
     const ev = events.find((e) => e.id === id)
     if (!ev) return
@@ -214,6 +261,13 @@ export function useEventPlanner(year: number) {
       return prev
     })
   }
+  const handleCheckpointAchievedChange = (id: number, idx: number, achieved: boolean) => {
+    const ev = events.find((e) => e.id === id)
+    if (!ev) return
+    updateLocalAndPersist(id, {
+      checkpoints: ev.checkpoints.map((c, i) => (i === idx ? { ...c, achieved } : c))
+    })
+  }
   const handleCheckpointColorChange = (id: number, idx: number, color: string) => {
     const ev = events.find((e) => e.id === id)
     if (!ev) return
@@ -238,6 +292,11 @@ export function useEventPlanner(year: number) {
     handleOwnerChange,
     handleOwnerCommit,
     handleColorChange,
+    handleGenreChange,
+    genres,
+    addGenre,
+    renameGenre,
+    removeGenre,
     handleStartChange,
     handleEndChange,
     handleGoalSet,
@@ -249,7 +308,9 @@ export function useEventPlanner(year: number) {
     handleCheckpointDateChange,
     handleCheckpointLabelChange,
     handleCheckpointLabelCommit,
-    handleCheckpointColorChange
+    handleCheckpointColorChange,
+    handleCheckpointAchievedChange,
+    handleStatusChange
   }
 }
 

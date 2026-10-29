@@ -66,6 +66,8 @@ function AnnualView({ year, setYear, events, setEvents, ...planner }: AnnualView
         year={year}
         events={filteredEvents}
         loading={planner.loading}
+        genres={planner.genres}
+        onGenreChange={planner.handleGenreChange}
         onAddEvent={planner.handleAddEvent}
         onNameChange={planner.handleNameChange}
         onNameCommit={planner.handleNameCommit}
@@ -84,6 +86,8 @@ function AnnualView({ year, setYear, events, setEvents, ...planner }: AnnualView
         onCheckpointLabelChange={planner.handleCheckpointLabelChange}
         onCheckpointLabelCommit={planner.handleCheckpointLabelCommit}
         onCheckpointColorChange={planner.handleCheckpointColorChange}
+        onCheckpointAchievedChange={planner.handleCheckpointAchievedChange}
+        onStatusChange={planner.handleStatusChange}
         onRemoveEvent={planner.handleRemoveEvent}
       />
 

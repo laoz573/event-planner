@@ -43,4 +43,8 @@ public class EventCheckpoint {
     /** チェックポイント(△)の色(#rrggbb)。デフォルトは黒系。 */
     @Column(nullable = false, length = 7)
     private String color = "#1c1a17";
+
+    /** 達成(true)/未達(false)。デフォルトは未達。 */
+    @Column(nullable = false)
+    private Boolean achieved = false;
 }

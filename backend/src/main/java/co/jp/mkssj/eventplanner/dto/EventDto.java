@@ -26,6 +26,12 @@ public class EventDto {
     private String goalColor;
     private List<CheckpointItem> checkpoints;
 
+    /** ジャンルのid(未選択はnull)。共有されたイベントでは他人のジャンルなので設定しない。 */
+    private Long genreId;
+
+    /** 状態の手動指定(planned / progress / done)。nullなら日付から自動算出する。 */
+    private String status;
+
     /**
      * 自分が所有するイベント(GET /api/events)ではnull。
      * 他ユーザーから共有されたイベント(GET /api/events/shared)では、共有元のユーザー名が入る。

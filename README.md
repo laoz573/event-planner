@@ -102,6 +102,43 @@ docker compose up --build
 docker compose exec -T mysql mysql -u appuser -p event-planner < db/init/02_add_event_owner.sql
 ```
 
+### ジャンル・実績機能を追加した既存DBへの反映について
+
+イベントに「ジャンル」(設定タブで追加・編集・削除)を付けられるようにし、ジャンルを選んだイベントの作業時間を
+入力する「実績」タブ(棒グラフ・折れ線グラフ付き)を追加しました。DBには `event_genre` / `event_actual` テーブルと
+`event.genre_id` 列が増えます。既存のコンテナ/ボリュームには自動反映されないため、上と同様に次のいずれかで反映してください
+(`ALTER TABLE` を含むため、既存DBへの流し込みは**1回だけ**にしてください)。
+
+```bash
+# (a) 開発中でデータを消してよい場合: ボリュームごと作り直す
+docker compose down -v
+docker compose up --build
+
+# (b) 既存データを残したい場合: 追加分のSQLだけを直接流し込む
+docker compose exec -T mysql mysql -u appuser -p event-planner < db/init/09_add_genre_and_actual.sql
+```
+
+グラフの描画には `chart.js` を使っています(`frontend/package.json` に追加済み。`npm install` で入ります)。
+
+### 状態の手動変更・チェックポイントの達成/未達・実績の備考を追加した既存DBへの反映について
+
+イベントの「状態」を手動で変えられる(「自動」に戻すことも可)ようにし、チェックポイントに「達成/未達」、
+実績に「備考」を付けられるようにしました。DBには `event.status` / `event_checkpoint.achieved` / `event_actual.note`
+列が増えます。既存DBには次のSQLを**1回だけ**流し込んでください(`ALTER TABLE` のため2回目はエラーになります)。
+
+```bash
+docker compose exec -T mysql mysql -u appuser -p event-planner < db/init/10_add_status_achieved_note.sql
+```
+
+### 実績を同じ日に何回でも小分けに入力できるようにした既存DBへの反映について
+
+「午前1時間・午後15分・17分」のように、同じイベント・同じ日付でも実績を何件でも追加できるようにしました。
+以前は「1日1件」のユニークキー(`uk_event_actual_event_date`)があったため、既存DBでは次のSQLを**1回だけ**流し込んでください。
+
+```bash
+docker compose exec -T mysql mysql -u appuser -p event-planner < db/init/11_allow_multiple_actuals_per_day.sql
+```
+
 ## デザインについて(2026年8月の刷新)
 
 ユーザーから提供されたリファレンス画像(黒基調+赤アクセントのビジネスツール風デザイン)に合わせて、

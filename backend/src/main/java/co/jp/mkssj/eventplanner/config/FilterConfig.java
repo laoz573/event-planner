@@ -7,7 +7,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * JwtAuthFilterを /api/events/**, /api/auth/register, /api/users/**, /api/shares/** に適用する。
+ * JwtAuthFilterを /api/events/**, /api/auth/register, /api/users/**, /api/shares/**,
+ * /api/genres/**, /api/actuals/** に適用する。
  * /api/auth/login のみ、未認証でアクセスできる必要があるため対象外。
  *
  * 外部公開にあたり、誰でも自己登録できる状態を廃止した。新しいアカウントの作成は
@@ -26,7 +27,8 @@ public class FilterConfig {
     @Bean
     public FilterRegistrationBean<JwtAuthFilter> jwtAuthFilterRegistration() {
         FilterRegistrationBean<JwtAuthFilter> registration = new FilterRegistrationBean<>(jwtAuthFilter);
-        registration.addUrlPatterns("/api/events/*", "/api/auth/register", "/api/users/*", "/api/shares/*");
+        registration.addUrlPatterns("/api/events/*", "/api/auth/register", "/api/users/*", "/api/shares/*",
+                "/api/genres/*", "/api/actuals/*");
         registration.setOrder(1);
         return registration;
     }

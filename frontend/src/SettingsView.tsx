@@ -1,16 +1,30 @@
-import type { EventItem } from './types'
+import type { EventItem, GenreItem } from './types'
 import { downloadEventsCsv } from './csv'
 import Register from './Register'
 import ShareSettingsCard from './ShareSettingsCard'
+import GenreSettingsCard from './GenreSettingsCard'
 
 interface SettingsViewProps {
   username: string | null
   year: number
   events: EventItem[]
   onLogout: () => void
+  genres: GenreItem[]
+  onAddGenre: (name: string) => Promise<void>
+  onRenameGenre: (id: number, name: string) => Promise<void>
+  onRemoveGenre: (id: number) => Promise<void>
 }
 
-function SettingsView({ username, year, events, onLogout }: SettingsViewProps) {
+function SettingsView({
+  username,
+  year,
+  events,
+  onLogout,
+  genres,
+  onAddGenre,
+  onRenameGenre,
+  onRemoveGenre
+}: SettingsViewProps) {
   return (
     <div className="ep-settings-grid">
       <div className="ep-chart-card ep-settings-card">
@@ -48,6 +62,8 @@ function SettingsView({ username, year, events, onLogout }: SettingsViewProps) {
           <Register />
         </div>
       </div>
+
+      <GenreSettingsCard genres={genres} onAdd={onAddGenre} onRename={onRenameGenre} onRemove={onRemoveGenre} />
 
       <div className="ep-chart-card ep-settings-card ep-settings-card-wide">
         <div className="ep-chart-card-head">

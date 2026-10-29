@@ -21,7 +21,7 @@ dev-build:
 # ポートは docker-compose.yml と同じ 8001/5174/3307 を使う(elec-toolの開発用コンテナと同時起動しても衝突しない)。
 dev-shell:
 	docker run -it --name event-planner-dev \
-		-v $(shell pwd):/workspace \
+		-v $(pwd):/workspace \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-p 8001:8000 -p 5174:5174 -p 3307:3306 \
 		event-planner-dev bash

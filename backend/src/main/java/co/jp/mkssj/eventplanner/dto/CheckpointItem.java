@@ -38,4 +38,7 @@ public class CheckpointItem {
     @Builder.Default
     @Pattern(regexp = "^#[0-9A-Fa-f]{6}$", message = "色は#rrggbb形式で指定してください")
     private String color = "#1c1a17";
+
+    /** 達成(true)/未達(false)。未指定(null)は未達として扱う。 */
+    private Boolean achieved;
 }
