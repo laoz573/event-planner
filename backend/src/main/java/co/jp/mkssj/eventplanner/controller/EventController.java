@@ -6,6 +6,8 @@ import co.jp.mkssj.eventplanner.dto.EventUpsertRequest;
 import co.jp.mkssj.eventplanner.entity.AppUser;
 import co.jp.mkssj.eventplanner.entity.Event;
 import co.jp.mkssj.eventplanner.repository.AppUserRepository;
+import co.jp.mkssj.eventplanner.repository.EventActualRepository;
+import co.jp.mkssj.eventplanner.repository.EventGenreRepository;
 import co.jp.mkssj.eventplanner.repository.EventRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -47,6 +49,8 @@ public class EventController {
 
     private final EventRepository eventRepository;
     private final AppUserRepository appUserRepository;
+    private final EventGenreRepository genreRepository;
+    private final EventActualRepository actualRepository;
 
     @GetMapping
     public List<EventDto> list(@RequestParam(required = false) Integer year, HttpServletRequest request) {
@@ -76,6 +80,7 @@ public class EventController {
     public EventDto create(@RequestBody @Valid EventUpsertRequest request, HttpServletRequest httpRequest) {
         Long userId = currentUserId(httpRequest);
         validateDateRange(request.getStartDate(), request.getEndDate());
+        validateGenre(request.getGenreId(), userId);
         Event event = new Event();
         event.setUserId(userId);
         applyRequest(event, request);
@@ -87,6 +92,7 @@ public class EventController {
                             HttpServletRequest httpRequest) {
         Long userId = currentUserId(httpRequest);
         validateDateRange(request.getStartDate(), request.getEndDate());
+        validateGenre(request.getGenreId(), userId);
         Event event = findOwnedEvent(id, userId);
         applyRequest(event, request);
         return toDto(saveWithRetry(event));
@@ -97,6 +103,8 @@ public class EventController {
     public void delete(@PathVariable Long id, HttpServletRequest httpRequest) {
         Long userId = currentUserId(httpRequest);
         Event event = findOwnedEvent(id, userId);
+        // 実績もあわせて削除する(MySQLではFKのON DELETE CASCADEでも消えるが、FKの無いH2のテストでも揃えるため)
+        actualRepository.deleteByEventId(event.getId());
         eventRepository.delete(event);
     }
 
@@ -153,6 +161,13 @@ public class EventController {
         }
     }
 
+    /** genreIdが指定されている場合、それが自分のジャンルであることを確認する(他人のジャンルは指定できない)。 */
+    private void validateGenre(Long genreId, Long userId) {
+        if (genreId != null && genreRepository.findByIdAndUserId(genreId, userId).isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "指定されたジャンルが見つかりません");
+        }
+    }
+
     private void validateDateRange(LocalDate start, LocalDate end) {
         if (start.isAfter(end)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "開始日は終了日より前(または同じ日)にしてください");
@@ -170,6 +185,8 @@ public class EventController {
         event.setGoalDate(request.getGoalDate());
         event.setGoalColor(
                 request.getGoalColor() != null && !request.getGoalColor().isBlank() ? request.getGoalColor() : "#b3241c");
+        event.setGenreId(request.getGenreId());
+        event.setStatus(request.getStatus());
         event.replaceCheckpoints(request.getCheckpoints());
     }
 
@@ -179,6 +196,7 @@ public class EventController {
                         .date(cp.getCheckpointDate())
                         .label(cp.getLabel())
                         .color(cp.getColor())
+                        .achieved(Boolean.TRUE.equals(cp.getAchieved()))
                         .build())
                 .toList();
         return EventDto.builder()
@@ -192,6 +210,8 @@ public class EventController {
                 .goalDate(event.getGoalDate())
                 .goalColor(event.getGoalColor())
                 .checkpoints(checkpointItems)
+                .genreId(event.getGenreId())
+                .status(event.getStatus())
                 .build();
     }
 
@@ -202,6 +222,7 @@ public class EventController {
                 .map(AppUser::getUsername)
                 .orElse(null);
         dto.setOwnerUsername(ownerUsername);
+        dto.setGenreId(null); // 共有されたイベントのジャンルは相手のものなので見せない
         return dto;
     }
 }

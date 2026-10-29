@@ -5,14 +5,16 @@ import QuarterView from './QuarterView'
 import ByOwnerView from './ByOwnerView'
 import SharedEventsView from './SharedEventsView'
 import SettingsView from './SettingsView'
+import ActualView from './ActualView'
 
-type Tab = 'annual' | 'quarter' | 'owner' | 'shared' | 'settings'
+type Tab = 'annual' | 'quarter' | 'owner' | 'shared' | 'actual' | 'settings'
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'annual', label: '年間計画' },
   { key: 'quarter', label: '四半期' },
   { key: 'owner', label: '担当別' },
   { key: 'shared', label: '共有されたイベント' },
+  { key: 'actual', label: '実績' },
   { key: 'settings', label: '設定' }
 ]
 
@@ -43,6 +45,13 @@ function PlannerShell({ username, onLogout }: PlannerShellProps) {
           <span className="ep-brand-mark" />
           <span className="ep-brand-name">EVENT PLANNER</span>
         </div>
+        {/* ★ 家計簿(household)へ切り替える。前段のリバースプロキシで同じドメインにまとめてあり、
+            このアプリは /planner/ 配下、家計簿はルート(/)配下で動いている。
+            未ログイン状態でCalendar.htmlを開いた場合は、家計簿側のrequireAuth()が
+            ログイン画面へ飛ばすので、ここではログイン状態を気にしなくてよい。 */}
+        <a className="ep-app-switch" href="/Calendar.html">
+          家計簿
+        </a>
         <nav className="ep-tabs">
           {TABS.map((t) => (
             <button
@@ -67,8 +76,18 @@ function PlannerShell({ username, onLogout }: PlannerShellProps) {
         {tab === 'quarter' && <QuarterView year={year} setYear={setYear} {...planner} />}
         {tab === 'owner' && <ByOwnerView year={year} setYear={setYear} {...planner} />}
         {tab === 'shared' && <SharedEventsView year={year} setYear={setYear} />}
+        {tab === 'actual' && <ActualView year={year} setYear={setYear} {...planner} />}
         {tab === 'settings' && (
-          <SettingsView username={username} year={year} events={planner.events} onLogout={onLogout} />
+          <SettingsView
+            username={username}
+            year={year}
+            events={planner.events}
+            onLogout={onLogout}
+            genres={planner.genres}
+            onAddGenre={planner.addGenre}
+            onRenameGenre={planner.renameGenre}
+            onRemoveGenre={planner.removeGenre}
+          />
         )}
       </main>
     </div>

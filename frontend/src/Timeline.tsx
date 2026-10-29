@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import type { Dispatch, PointerEvent as ReactPointerEvent, SetStateAction } from 'react'
 import type { EventItem } from './types'
 import { DEFAULT_EVENT_NAME } from './useEventPlanner'
@@ -47,6 +47,52 @@ interface TimelineProps {
   onRemoveEvent: (id: number) => void
 }
 
+const BASE_ROW_HEIGHT = 146
+const LANE_PAD = 8
+
+/**
+ * チェックポイント/ゴールのラベルが横方向でぶつかる場合に、段(レーン)をずらして積む。
+ * 段が増えた行は、上に積んだ分だけ上下に高さを広げ、左のラベル列の行も同じ高さに揃える。
+ */
+function layoutMarkers(root: HTMLElement | null) {
+  if (!root) return
+  const timelines = root.querySelectorAll<HTMLElement>('.ep-event-row .ep-row-timeline')
+  const labels = root.querySelectorAll<HTMLElement>('.ep-row-label-col .ep-row-label')
+  timelines.forEach((rowTimeline, i) => {
+    const rowLabel = labels[i]
+    const items = Array.from(rowTimeline.querySelectorAll<HTMLElement>('.ep-checkpoint-marker, .ep-goal-marker'))
+    const width = rowTimeline.clientWidth
+    const visible = items.filter((mk) => mk.style.left)
+    if (width === 0 || visible.length === 0) {
+      items.forEach((mk) => mk.style.setProperty('--lane-shift', '0px'))
+      rowTimeline.style.height = ''
+      if (rowLabel) rowLabel.style.height = ''
+      return
+    }
+    let step = 0
+    const boxes = visible
+      .map((mk) => {
+        const x = (parseFloat(mk.style.left) / 100) * width
+        const half = mk.offsetWidth / 2 + LANE_PAD / 2
+        step = Math.max(step, mk.offsetHeight + 4)
+        return { mk, left: x - half, right: x + half }
+      })
+      .sort((a, b) => a.left - b.left)
+    const laneRight: number[] = []
+    let maxLane = 0
+    boxes.forEach((b) => {
+      let lane = 0
+      while (lane < laneRight.length && laneRight[lane] > b.left) lane++
+      laneRight[lane] = b.right
+      if (lane > maxLane) maxLane = lane
+      b.mk.style.setProperty('--lane-shift', `${lane * step}px`)
+    })
+    const h = maxLane === 0 ? '' : `${BASE_ROW_HEIGHT + 2 * maxLane * step}px`
+    rowTimeline.style.height = h
+    if (rowLabel) rowLabel.style.height = h
+  })
+}
+
 function Timeline({
   title,
   year,
@@ -62,6 +108,7 @@ function Timeline({
   onRemoveEvent
 }: TimelineProps) {
   const dragCtxRef = useRef<DragCtx | null>(null)
+  const innerRef = useRef<HTMLDivElement>(null)
   const months = daysInMonthArr(year)
   const [rangeStartMonth, rangeEndMonthExclusive] = monthRange ?? [0, 12]
 
@@ -165,6 +212,7 @@ function Timeline({
         }
 
         applyLiveStyles(ctx, ev)
+        layoutMarkers(innerRef.current)
 
         const next = [...prev]
         next[idx] = ev
@@ -248,6 +296,18 @@ function Timeline({
     e.preventDefault()
   }
 
+  // 描画のたびに(イベント・年・表示範囲が変わったとき)重なりを解消する
+  useLayoutEffect(() => {
+    layoutMarkers(innerRef.current)
+  })
+
+  // 画面幅が変わるとラベルの横位置(px)が変わるので、リサイズ時にも計算し直す
+  useEffect(() => {
+    const onResize = () => layoutMarkers(innerRef.current)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+
   const todayStr = todayDateStr()
   const todayIdx = dateToIdx(todayStr, year)
   const showTodayLine = todayIdx >= rangeStartIdx && todayIdx <= rangeEndIdx
@@ -260,7 +320,7 @@ function Timeline({
         <span className="ep-muted-hint">バーをドラッグで期間移動、両端で開始／終了を調整</span>
       </div>
       <div className="ep-chart-scroll">
-        <div className="ep-chart-inner">
+        <div className="ep-chart-inner" ref={innerRef}>
           <div className="ep-header-row">
             <div className="ep-row-label-spacer">EVENT / OWNER</div>
             <div className="ep-months-row">
@@ -378,9 +438,9 @@ function Timeline({
                           return (
                             <div
                               key={idx}
-                              className={`ep-checkpoint-marker${cp.label ? ' ep-marker-has-label' : ''}`}
+                              className={`ep-checkpoint-marker${cp.label ? ' ep-marker-has-label' : ''}${cp.achieved ? ' ep-marker-achieved' : ''}`}
                               style={{ left: `${p}%` }}
-                              title={cp.label ? `${cp.label}(${fmtShort(cp.date)})` : `チェックポイント: ${cp.date}`}
+                              title={`${cp.label ? `${cp.label}(${fmtShort(cp.date)})` : `チェックポイント: ${cp.date}`}${cp.achieved ? ' 達成' : ' 未達'}`}
                               onPointerDown={(e) => handlePointerDown(e, ev.id, 'checkpoint', idx)}
                             >
                               <div className="ep-triangle-shape" style={{ borderBottomColor: cp.color }} />

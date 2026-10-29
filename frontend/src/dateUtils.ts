@@ -65,8 +65,16 @@ export function todayDateStr(): string {
   return `${y}-${m}-${d}`
 }
 
-/** 今日の日付とイベントの期間を比較して状態を判定する(バックエンドには保存しない派生値) */
-export function computeStatus(ev: Pick<EventItem, 'startDate' | 'endDate'>, todayStr: string): EventStatus {
+/** 手動指定がなければ、今日の日付とイベントの期間を比較して状態を判定する */
+export const STATUS_LABELS: Record<'planned' | 'progress' | 'done', EventStatus> = {
+  planned: '予定',
+  progress: '進行中',
+  done: '完了'
+}
+
+/** 状態を手動で指定していればそれを、なければ日付から自動で算出した状態を返す。 */
+export function computeStatus(ev: Pick<EventItem, 'startDate' | 'endDate' | 'status'>, todayStr: string): EventStatus {
+  if (ev.status && STATUS_LABELS[ev.status]) return STATUS_LABELS[ev.status]
   if (todayStr > ev.endDate) return '完了'
   if (todayStr < ev.startDate) return '予定'
   return '進行中'

@@ -712,7 +712,7 @@ button:disabled {
 .ep-goal-marker {
   position: absolute;
   top: 50%;
-  transform: translate(-50%, -51px);
+  transform: translate(-50%, calc(-51px - var(--lane-shift, 0px)));
   cursor: grab;
   touch-action: none;
   z-index: 3;
@@ -724,7 +724,7 @@ button:disabled {
 
 /* 内容メモ(ラベル)が付いているチェックポイントは表示行が2行になる分、上方向のオフセットを広げる */
 .ep-checkpoint-marker.ep-marker-has-label {
-  transform: translate(-50%, -63px);
+  transform: translate(-50%, calc(-63px - var(--lane-shift, 0px)));
 }
 
 .ep-checkpoint-marker:active,
@@ -1447,4 +1447,324 @@ button:disabled {
   .ep-table-card {
     padding: 12px 10px 16px;
   }
+}
+
+
+/* ------------------------------------------------------------------
+   ★ 家計簿(household)への切り替えリンク
+
+   household と event-planner は別々のアプリだが、前段のリバースプロキシ
+   (shared-nginx)で household.mkssj-app.jp の / と /planner/ にまとめてあるため、
+   利用者からは1つのサイトに見える。ヘッダーの左端にこのリンクを置いて、
+   家計簿側の共通ナビ(household の js/appnav.js)と行き来できるようにしている。
+   ------------------------------------------------------------------ */
+.ep-app-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  padding: 5px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--ink-muted);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.ep-app-switch::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+.ep-app-switch:hover {
+  color: var(--ink);
+  border-color: var(--accent);
+}
+
+@media (max-width: 600px) {
+  .ep-app-switch {
+    padding: 4px 9px;
+    font-size: 12px;
+  }
+}
+
+   ジャンル(設定タブの管理 / 編集パネルの選択 / 一覧のチップ)と、
+   「実績」タブ(入力・グラフ)
+   ------------------------------------------------------------------ */
+
+/* 一覧のイベント名の横に出すジャンルのチップ */
+.ep-genre-chip {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-panel-alt);
+  color: var(--ink-muted);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* 編集パネル: ジャンルはグリッドの2行目(イベント名の真下)に置く */
+.ep-edit-col-genre {
+  grid-column: 1;
+}
+
+.ep-genre-select,
+.ep-act-select {
+  padding: 6px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: inherit;
+  background: #fff;
+  max-width: 100%;
+}
+
+/* 設定タブのジャンル管理 */
+.ep-genre-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.ep-genre-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ep-genre-input {
+  flex: 1 1 200px;
+  min-width: 0;
+  max-width: 360px;
+  padding: 7px 9px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+/* 実績タブ */
+.ep-act-year {
+  font-weight: 800;
+  min-width: 56px;
+  text-align: center;
+}
+
+.ep-act-hint {
+  margin: 0 0 10px;
+}
+
+.ep-act-sum {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ep-act-table th:nth-child(1) { width: 32%; }
+.ep-act-table th:nth-child(2) { width: 16%; }
+.ep-act-table th:nth-child(3) { width: 20%; }
+.ep-act-table th:nth-child(4) { width: 18%; }
+.ep-act-table th:nth-child(5) { width: 14%; }
+
+.ep-act-panel {
+  padding: 8px 12px 14px;
+}
+
+.ep-act-form {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.ep-act-form label {
+  font-size: 11px;
+  color: var(--ink-muted);
+  font-weight: 700;
+}
+
+.ep-act-form input[type='date'],
+.ep-act-num {
+  padding: 6px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.ep-act-num {
+  width: 72px;
+}
+
+.ep-act-entries {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ep-act-entries li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.ep-act-entry-date {
+  min-width: 96px;
+  color: var(--ink-muted);
+}
+
+.ep-act-entry-time {
+  min-width: 96px;
+  font-weight: 700;
+}
+
+.ep-act-subtitle {
+  margin: 18px 0 8px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.ep-act-chart-wrap {
+  position: relative;
+  height: 300px;
+}
+
+.ep-act-empty {
+  margin: 8px 0;
+}
+
+.ep-act-modebar {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.ep-act-mode {
+  padding: 7px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.ep-act-mode-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  cursor: default;
+}
+
+.ep-act-periodbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+
+.ep-act-periodbar input[type='date'],
+.ep-act-periodbar input[type='month'] {
+  padding: 6px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+@media (max-width: 600px) {
+  .ep-act-chart-wrap {
+    height: 240px;
+  }
+}
+
+/* ---- 状態の手動変更 / チェックポイントの達成・未達 / 実績の備考 ---- */
+.ep-status-select {
+  margin-top: 4px;
+  max-width: 100%;
+  font: inherit;
+  font-size: 12px;
+  padding: 3px 6px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-panel);
+  color: var(--ink);
+}
+
+.ep-cp-achieve {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--ink-muted);
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ep-cp-achieve-on {
+  background: #2e7d32;
+  border-color: #2e7d32;
+  color: #fff;
+}
+
+.ep-chip-check {
+  color: #2e7d32;
+  font-weight: 700;
+  margin-right: 2px;
+}
+
+.ep-chip-achieved {
+  border-color: #2e7d32;
+}
+
+/* タイムライン上の達成済みチェックポイントは、日付の前に✓を付けて少し薄くする */
+.ep-marker-achieved .ep-triangle-shape {
+  opacity: 0.45;
+}
+
+.ep-marker-achieved .ep-marker-label-date::before {
+  content: '✓ ';
+  color: #2e7d32;
+  font-weight: 700;
+}
+
+.ep-act-note-input {
+  flex: 1 1 160px;
+  min-width: 120px;
+  padding: 4px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font: inherit;
+  font-size: 13px;
+}
+
+.ep-act-entry-note {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--ink-muted);
+  font-size: 12.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

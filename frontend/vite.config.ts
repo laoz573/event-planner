@@ -1,7 +1,15 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-export default defineConfig({
+// ★ 本番ビルドだけ base を '/planner/' にしている。
+//   家計簿(household)と同じドメイン household.mkssj-app.jp の /planner/ 配下に
+//   同居させるため、ビルド成果物が読み込むJS/CSSのパスも /planner/ 始まりに
+//   しておく必要がある(前段のリバースプロキシ shared-nginx が /planner/ を
+//   取り除いてから event-planner-frontend に渡す)。
+//   開発サーバー(npm run dev)はこれまでどおり / のままにしたいので、
+//   command が 'build' のときだけ切り替える。
+export default defineConfig(({ command }) => ({
+  base: command === 'build' ? '/planner/' : '/',
   plugins: [react()],
   server: {
     host: true,
@@ -16,4 +24,4 @@ export default defineConfig({
       }
     }
   }
-})
+}))

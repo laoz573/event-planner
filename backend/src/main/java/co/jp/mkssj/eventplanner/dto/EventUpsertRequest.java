@@ -58,4 +58,11 @@ public class EventUpsertRequest {
 
     @Builder.Default
     private List<@NotNull @Valid CheckpointItem> checkpoints = new ArrayList<>();
+
+    /** ジャンルのid。未選択の場合はnull。自分のジャンルであることはコントローラー側で検証する。 */
+    private Long genreId;
+
+    /** 状態の手動指定(planned=予定 / progress=進行中 / done=完了)。nullなら日付から自動算出する。 */
+    @Pattern(regexp = "^(planned|progress|done)$", message = "状態の指定が正しくありません")
+    private String status;
 }

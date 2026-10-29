@@ -69,6 +69,14 @@ public class Event {
     @Column(name = "goal_color", nullable = false, length = 7)
     private String goalColor = "#b3241c";
 
+    /** ジャンル(event_genre.id)。未選択の場合はnull。実績タブはジャンルを選んだイベントだけを対象にする。 */
+    @Column(name = "genre_id")
+    private Long genreId;
+
+    /** 状態を手動で決めた場合の値(planned / progress / done)。nullなら日付から自動算出する。 */
+    @Column(name = "status", length = 10)
+    private String status;
+
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @OrderBy("checkpointDate ASC")
     private List<EventCheckpoint> checkpoints = new ArrayList<>();
@@ -105,6 +113,7 @@ public class Event {
                 checkpoint.setLabel(item.getLabel() != null ? item.getLabel() : "");
                 checkpoint.setColor(
                         item.getColor() != null && !item.getColor().isBlank() ? item.getColor() : "#1c1a17");
+                checkpoint.setAchieved(Boolean.TRUE.equals(item.getAchieved()));
                 checkpoints.add(checkpoint);
             }
         }

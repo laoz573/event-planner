@@ -1,7 +1,14 @@
-import type { EventItem, EventUpsertPayload, ShareSetting, UserSummary } from './types'
+import type { ActualItem, EventItem, EventUpsertPayload, GenreItem, ShareSetting, UserSummary } from './types'
 import { AUTH_EXPIRED_EVENT, clearAuth, getToken } from './auth'
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '/api'
+// ★ APIのベースURL。
+//   本番は家計簿と同じドメインの /planner/ 配下に同居させているため、APIも /planner/api になる。
+//   import.meta.env.BASE_URL は vite.config.ts の base がそのまま入る値で、
+//   本番ビルドなら '/planner/'、開発サーバーなら '/' になる。これを使うことで
+//   開発時は '/api'、本番は '/planner/api' と自動で切り替わる
+//   (VITE_API_BASE_URL を指定した場合はそちらが優先される)。
+const API_BASE =
+  import.meta.env.VITE_API_BASE_URL ?? `${import.meta.env.BASE_URL.replace(/\/$/, '')}/api`
 
 async function handle<T>(res: Response, errorMessage: string): Promise<T> {
   if (!res.ok) {
@@ -96,6 +103,56 @@ export async function updateEvent(id: number, payload: EventUpsertPayload): Prom
 export async function deleteEvent(id: number): Promise<void> {
   const res = await authFetch(`${API_BASE}/events/${id}`, { method: 'DELETE' })
   return handle<void>(res, 'イベントの削除に失敗しました')
+}
+
+/** ジャンル一覧(設定タブで管理。イベントに任意で1つ付ける)。 */
+export async function fetchGenres(): Promise<GenreItem[]> {
+  const res = await authFetch(`${API_BASE}/genres`)
+  return handle<GenreItem[]>(res, 'ジャンル一覧の取得に失敗しました')
+}
+
+export async function createGenre(name: string): Promise<GenreItem> {
+  const res = await authFetch(`${API_BASE}/genres`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name })
+  })
+  return handle<GenreItem>(res, 'ジャンルの追加に失敗しました')
+}
+
+export async function updateGenre(id: number, name: string): Promise<GenreItem> {
+  const res = await authFetch(`${API_BASE}/genres/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name })
+  })
+  return handle<GenreItem>(res, 'ジャンルの変更に失敗しました')
+}
+
+export async function deleteGenre(id: number): Promise<void> {
+  const res = await authFetch(`${API_BASE}/genres/${id}`, { method: 'DELETE' })
+  return handle<void>(res, 'ジャンルの削除に失敗しました')
+}
+
+/** 年をまたいだ全実績(ジャンル指定済みイベントのものだけ)。 */
+export async function fetchActuals(): Promise<ActualItem[]> {
+  const res = await authFetch(`${API_BASE}/actuals`)
+  return handle<ActualItem[]>(res, '実績の取得に失敗しました')
+}
+
+/** 同じイベント・同じ日付は上書き。minutes(分)が0なら削除される。 */
+export async function saveActual(eventId: number, workDate: string, minutes: number, note: string): Promise<void> {
+  const res = await authFetch(`${API_BASE}/actuals`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ eventId, workDate, minutes, note })
+  })
+  return handle<void>(res, '実績の保存に失敗しました')
+}
+
+export async function deleteActual(id: number): Promise<void> {
+  const res = await authFetch(`${API_BASE}/actuals/${id}`, { method: 'DELETE' })
+  return handle<void>(res, '実績の削除に失敗しました')
 }
 
 /** 他のユーザーから共有されているイベント一覧(閲覧専用)。 */
