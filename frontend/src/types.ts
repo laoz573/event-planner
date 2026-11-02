@@ -5,7 +5,12 @@ export interface CheckpointItem {
   date: string
   label: string
   color: string
+  /** 達成(true)/未達(false)。未設定は未達扱い。 */
+  achieved?: boolean
 }
+
+/** 状態の手動指定の値(planned=予定 / progress=進行中 / done=完了)。 */
+export type StatusCode = 'planned' | 'progress' | 'done'
 
 export interface EventItem {
   id: number
@@ -22,6 +27,8 @@ export interface EventItem {
   genreId?: number | null
   /** 自分のイベント(GET /api/events)ではundefined。共有されたイベント(GET /api/events/shared)では共有元のユーザー名。 */
   ownerUsername?: string | null
+  /** 状態の手動指定。null(または未設定)なら日付から自動算出する。 */
+  status?: StatusCode | null
 }
 
 export interface EventUpsertPayload {
@@ -35,6 +42,7 @@ export interface EventUpsertPayload {
   goalColor: string
   checkpoints: CheckpointItem[]
   genreId: number | null
+  status: StatusCode | null
 }
 
 export type EventStatus = '予定' | '進行中' | '完了'
@@ -54,6 +62,8 @@ export interface ActualItem {
   genreId: number
   workDate: string
   minutes: number
+  /** 備考(空文字なら備考なし)。 */
+  note: string
 }
 
 /** イベント共有の相手を選ぶ画面向けの、自分以外の既存ユーザー。 */
